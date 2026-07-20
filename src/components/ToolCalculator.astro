@@ -1,0 +1,79 @@
+---
+const {kind}=Astro.props;
+---
+<div data-calc data-kind={kind} class="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+<div class="fields grid gap-4"></div>
+<button class="go mt-5 w-full rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white">Calcular</button>
+<div class="result mt-5 hidden rounded-2xl bg-indigo-50 p-5" aria-live="polite"></div>
+</div>
+<script>
+const C={
+iva:[["a","Importe","number",100],["b","IVA %","number",21]],discount:[["a","Precio","number",100],["b","Descuento %","number",20]],
+margin:[["a","Coste","number",50],["b","Venta","number",80]],loan:[["a","Capital","number",100000],["b","Interés anual %","number",3],["c","Años","number",20]],
+simple:[["a","Capital","number",1000],["b","Interés %","number",5],["c","Años","number",3]],compound:[["a","Capital","number",1000],["b","Interés %","number",5],["c","Años","number",10]],
+rule72:[["a","Interés %","number",6]],tip:[["a","Cuenta","number",60],["b","Propina %","number",10],["c","Personas","number",2]],saving:[["a","Objetivo","number",10000],["b","Actual","number",2000],["c","Meses","number",24]],
+percent:[["a","Cantidad","number",200],["b","Porcentaje","number",15]],change:[["a","Inicial","number",100],["b","Final","number",125]],rule3:[["a","A","number",2],["b","B","number",10],["c","C","number",5]],
+mean:[["a","Números separados por comas","text","10,20,30"]],median:[["a","Números separados por comas","text","10,20,30,40"]],gcd:[["a","Primer entero","number",48],["b","Segundo entero","number",18]],lcm:[["a","Primer entero","number",12],["b","Segundo entero","number",18]],
+power:[["a","Base","number",2],["b","Exponente","number",8]],sqrt:[["a","Número","number",144]],quadratic:[["a","Coeficiente a","number",1],["b","Coeficiente b","number",-3],["c","Coeficiente c","number",2]],
+bmi:[["a","Peso kg","number",70],["b","Altura cm","number",175]],bmr:[["a","Peso kg","number",70],["b","Altura cm","number",175],["c","Edad","number",35]],calories:[["a","Peso kg","number",70],["b","Altura cm","number",175],["c","Edad","number",35]],
+ideal:[["a","Altura cm","number",175]],water:[["a","Peso kg","number",70]],pace:[["a","Distancia km","number",10],["b","Tiempo minutos","number",50]],
+age:[["a","Nacimiento","date","1990-01-01"]],datediff:[["a","Inicio","date","2026-01-01"],["b","Final","date","2026-12-31"]],adddays:[["a","Fecha","date","2026-01-01"],["b","Días","number",30]],workdays:[["a","Inicio","date","2026-01-01"],["b","Final","date","2026-01-31"]],countdown:[["a","Fecha objetivo","date","2026-12-31"]],
+temp:[["a","Celsius","number",20]],weight:[["a","Kilogramos","number",10]],distance:[["a","Kilómetros","number",10]],length:[["a","Centímetros","number",10]],volume:[["a","Litros","number",10]],area:[["a","Metros cuadrados","number",10]],speed:[["a","km/h","number",100]],bytes:[["a","Megabytes","number",10]],time:[["a","Horas decimales","number",2.5]],energy:[["a","Julios","number",100]],
+words:[["a","Texto","textarea","Escribe aquí..."]],chars:[["a","Texto","textarea","Escribe aquí..."]],password:[["a","Longitud","number",16]],uuid:[],random:[["a","Mínimo","number",1],["b","Máximo","number",100]],fuel:[["a","Kilómetros","number",500],["b","Litros","number",35]],paint:[["a","Superficie m²","number",60],["b","Manos","number",2],["c","Rendimiento m²/l","number",10]],tiles:[["a","Superficie m²","number",20],["b","Área pieza m²","number",0.18],["c","Desperdicio %","number",10]],reading:[["a","Texto","textarea","Escribe aquí..."]]
+};
+document.querySelectorAll("[data-calc]").forEach(root=>{
+const kind=root.dataset.kind,box=root.querySelector(".fields"),res=root.querySelector(".result");
+(C[kind]||[]).forEach(([id,l,t,d])=>{let lab=document.createElement("label");lab.innerHTML=`<span class="mb-2 block text-sm font-bold">${l}</span>`;let el=t==="textarea"?document.createElement("textarea"):document.createElement("input");if(t!=="textarea")el.type=t;el.value=d;el.id=id;el.className="w-full rounded-xl border border-slate-200 px-4 py-3";lab.appendChild(el);box.appendChild(lab)});
+const v=id=>{let e=root.querySelector("#"+id);return e?.type==="number"?+e.value:e?.value},n=x=>new Intl.NumberFormat("es-ES",{maximumFractionDigits:3}).format(x),nums=s=>String(s).split(/[,;\s]+/).map(Number).filter(Number.isFinite),G=(a,b)=>{a=Math.abs(a|0);b=Math.abs(b|0);while(b)[a,b]=[b,a%b];return a};
+root.querySelector(".go").onclick=()=>{let o="",a=v("a"),b=v("b"),c=v("c");
+if(kind==="iva")o=`IVA: <b>${n(a*b/100)}</b> · Total: <b>${n(a*(1+b/100))}</b>`;
+else if(kind==="discount")o=`Precio final: <b>${n(a*(1-b/100))}</b>`;
+else if(kind==="margin")o=`Beneficio: <b>${n(b-a)}</b> · Margen: <b>${n((b-a)/b*100)}%</b>`;
+else if(kind==="loan"){let r=b/1200,m=c*12,q=r?a*r*(1+r)**m/((1+r)**m-1):a/m;o=`Cuota mensual: <b>${n(q)} €</b>`}
+else if(kind==="simple")o=`Capital final: <b>${n(a*(1+b/100*c))}</b>`;
+else if(kind==="compound")o=`Capital final: <b>${n(a*(1+b/100)**c)}</b>`;
+else if(kind==="rule72")o=`Años aproximados: <b>${n(72/a)}</b>`;
+else if(kind==="tip")o=`Total: <b>${n(a*(1+b/100))} €</b> · Por persona: <b>${n(a*(1+b/100)/c)} €</b>`;
+else if(kind==="saving")o=`Ahorro mensual: <b>${n((a-b)/c)} €</b>`;
+else if(kind==="percent")o=`Resultado: <b>${n(a*b/100)}</b>`;
+else if(kind==="change")o=`Variación: <b>${n((b-a)/a*100)}%</b>`;
+else if(kind==="rule3")o=`x = <b>${n(b*c/a)}</b>`;
+else if(kind==="mean"){let x=nums(a);o=`Media: <b>${n(x.reduce((p,q)=>p+q,0)/x.length)}</b>`}
+else if(kind==="median"){let x=nums(a).sort((p,q)=>p-q),m=x.length>>1;o=`Mediana: <b>${n(x.length%2?x[m]:(x[m-1]+x[m])/2)}</b>`}
+else if(kind==="gcd")o=`MCD: <b>${G(a,b)}</b>`;
+else if(kind==="lcm")o=`MCM: <b>${Math.abs(a*b)/G(a,b)}</b>`;
+else if(kind==="power")o=`Resultado: <b>${n(a**b)}</b>`;
+else if(kind==="sqrt")o=`Resultado: <b>${n(Math.sqrt(a))}</b>`;
+else if(kind==="quadratic"){let d=b*b-4*a*c;o=d<0?"Sin soluciones reales":`x₁: <b>${n((-b+Math.sqrt(d))/(2*a))}</b> · x₂: <b>${n((-b-Math.sqrt(d))/(2*a))}</b>`}
+else if(kind==="bmi")o=`IMC: <b>${n(a/(b/100)**2)}</b>`;
+else if(kind==="bmr")o=`TMB estimada: <b>${n(10*a+6.25*b-5*c)} kcal/día</b>`;
+else if(kind==="calories")o=`Mantenimiento aproximado: <b>${n((10*a+6.25*b-5*c)*1.4)} kcal/día</b>`;
+else if(kind==="ideal")o=`Referencia aproximada: <b>${n(50+2.3*Math.max(0,a/2.54-60))} kg</b>`;
+else if(kind==="water")o=`Agua aproximada: <b>${n(a*.035)} litros/día</b>`;
+else if(kind==="pace")o=`Ritmo: <b>${n(b/a)} min/km</b>`;
+else if(kind==="age"){let d=new Date(a),t=new Date(),y=t.getFullYear()-d.getFullYear();if(t<new Date(t.getFullYear(),d.getMonth(),d.getDate()))y--;o=`Edad: <b>${y} años</b>`}
+else if(kind==="datediff")o=`Diferencia: <b>${Math.abs(new Date(b)-new Date(a))/86400000} días</b>`;
+else if(kind==="adddays"){let d=new Date(a);d.setDate(d.getDate()+b);o=`Fecha: <b>${d.toLocaleDateString("es-ES")}</b>`}
+else if(kind==="workdays"){let s=new Date(a),e=new Date(b),x=0;for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))if(d.getDay()!=0&&d.getDay()!=6)x++;o=`Laborables: <b>${x}</b>`}
+else if(kind==="countdown")o=`Faltan: <b>${Math.ceil((new Date(a)-new Date())/86400000)} días</b>`;
+else if(kind==="temp")o=`Fahrenheit: <b>${n(a*9/5+32)} °F</b>`;
+else if(kind==="weight")o=`Libras: <b>${n(a*2.20462)}</b>`;
+else if(kind==="distance")o=`Millas: <b>${n(a*.621371)}</b>`;
+else if(kind==="length")o=`Pulgadas: <b>${n(a/2.54)}</b>`;
+else if(kind==="volume")o=`Galones: <b>${n(a/3.78541)}</b>`;
+else if(kind==="area")o=`Pies²: <b>${n(a*10.7639)}</b>`;
+else if(kind==="speed")o=`mph: <b>${n(a*.621371)}</b>`;
+else if(kind==="bytes")o=`Bytes: <b>${n(a*1024*1024)}</b>`;
+else if(kind==="time")o=`Resultado: <b>${Math.floor(a)} h ${Math.round((a-Math.floor(a))*60)} min</b>`;
+else if(kind==="energy")o=`Calorías: <b>${n(a/4.184)}</b>`;
+else if(kind==="words"||kind==="reading"){let x=String(a).trim().split(/\s+/).filter(Boolean).length;o=`Palabras: <b>${x}</b> · Lectura: <b>${Math.max(1,Math.ceil(x/200))} min</b>`}
+else if(kind==="chars")o=`Caracteres: <b>${String(a).length}</b> · Sin espacios: <b>${String(a).replace(/\s/g,"").length}</b>`;
+else if(kind==="password"){let x="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";o=`Contraseña: <b class="break-all">${Array.from(crypto.getRandomValues(new Uint32Array(a)),z=>x[z%x.length]).join("")}</b>`}
+else if(kind==="uuid")o=`UUID: <b class="break-all">${crypto.randomUUID()}</b>`;
+else if(kind==="random")o=`Número: <b>${Math.floor(Math.random()*(b-a+1))+a}</b>`;
+else if(kind==="fuel")o=`Consumo: <b>${n(b/a*100)} L/100 km</b>`;
+else if(kind==="paint")o=`Pintura: <b>${n(a*b/c)} litros</b>`;
+else if(kind==="tiles")o=`Piezas: <b>${Math.ceil(a/b*(1+c/100))}</b>`;
+res.innerHTML=o||"Revisa los datos";res.classList.remove("hidden")};
+});
+</script>

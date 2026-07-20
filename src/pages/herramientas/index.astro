@@ -1,0 +1,13 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ToolCard from "../../components/ToolCard.astro";
+import { tools } from "../../data/tools";
+---
+<BaseLayout title="50 herramientas online gratuitas | Calculaya" description="Calculadoras, conversores y utilidades online gratuitas.">
+<section class="mx-auto max-w-7xl px-5 py-16">
+<p class="text-sm font-extrabold uppercase tracking-widest text-indigo-600">Directorio</p>
+<h1 class="mt-3 text-4xl font-black text-slate-950">Todas las herramientas</h1>
+<p class="mt-4 text-slate-600">Ya puedes utilizar {tools.length} herramientas gratuitas.</p>
+<div class="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{tools.map(t => <ToolCard {...t} />)}</div>
+</section>
+</BaseLayout>

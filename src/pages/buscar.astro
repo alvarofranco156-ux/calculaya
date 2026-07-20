@@ -1,0 +1,12 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ToolCard from "../components/ToolCard.astro";
+import {tools} from "../data/tools";
+const q=(Astro.url.searchParams.get("q")||"").toLowerCase();
+const results=q?tools.filter(t=>(t.name+t.category+t.description).toLowerCase().includes(q)):tools;
+---
+<BaseLayout title="Buscar herramientas | Calculaya" description="Busca entre las herramientas de Calculaya." noindex={true}>
+<section class="mx-auto max-w-7xl px-5 py-16"><h1 class="text-4xl font-black">Buscar herramientas</h1>
+<form class="mt-7 flex max-w-2xl gap-3"><input name="q" value={q} class="flex-1 rounded-xl border px-4 py-3"/><button class="rounded-xl bg-indigo-600 px-6 font-bold text-white">Buscar</button></form>
+<p class="mt-8">{results.length} resultados.</p><div class="mt-7 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{results.map(t=><ToolCard {...t}/>)}</div></section>
+</BaseLayout>
