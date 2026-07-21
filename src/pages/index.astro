@@ -1,0 +1,193 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SearchBar from "../components/SearchBar.astro";
+import { categories, popularTools } from "../data/site";
+---
+
+<BaseLayout
+  title="Calculaya — Calculadoras y herramientas online gratuitas"
+  description="Calculadoras, conversores y herramientas online gratuitas para resolver operaciones cotidianas de forma rápida."
+>
+  <main>
+    <section class="hero">
+      <div class="container">
+        <span class="eyebrow">Herramientas online gratuitas</span>
+
+        <h1>Calcula, convierte y resuelve en segundos</h1>
+
+        <p>
+          Encuentra calculadoras financieras, herramientas matemáticas,
+          conversores, utilidades de salud y muchas más.
+        </p>
+
+        <SearchBar />
+
+        <div class="actions">
+          <a class="primary-button" href="/herramientas">
+            Ver todas las herramientas
+          </a>
+
+          <a class="secondary-button" href="/categorias">
+            Explorar categorías
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-heading">
+          <h2>Categorías principales</h2>
+          <a href="/categorias">Ver todas</a>
+        </div>
+
+        <div class="grid">
+          {
+            categories.slice(0, 6).map((category) => (
+              <a
+                class="card"
+                href={`/herramientas?categoria=${category.slug}`}
+              >
+                <span class="icon">{category.icon}</span>
+                <h3>{category.name}</h3>
+                <p>{category.description}</p>
+                <small>{category.count} herramientas</small>
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-muted">
+      <div class="container">
+        <div class="section-heading">
+          <h2>Herramientas populares</h2>
+          <a href="/populares">Ver todas</a>
+        </div>
+
+        <div class="grid">
+          {
+            popularTools.map((tool) => (
+              <a class="card" href={`/${tool.slug}`}>
+                <h3>{tool.title}</h3>
+                <p>{tool.description}</p>
+              </a>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<style>
+  .hero {
+    padding: 6rem 1.25rem;
+    text-align: center;
+  }
+
+  .container {
+    width: min(1120px, 100%);
+    margin: 0 auto;
+  }
+
+  .eyebrow {
+    display: inline-block;
+    margin-bottom: 1rem;
+    font-weight: 700;
+  }
+
+  h1 {
+    max-width: 800px;
+    margin: 0 auto 1.25rem;
+    font-size: clamp(2.3rem, 6vw, 4.5rem);
+    line-height: 1.05;
+  }
+
+  .hero p {
+    max-width: 700px;
+    margin: 0 auto 2rem;
+    font-size: 1.15rem;
+    line-height: 1.7;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .primary-button,
+  .secondary-button {
+    padding: 0.9rem 1.4rem;
+    border-radius: 0.75rem;
+    text-decoration: none;
+    font-weight: 700;
+  }
+
+  .primary-button {
+    background: #2563eb;
+    color: white;
+  }
+
+  .secondary-button {
+    border: 1px solid #cbd5e1;
+    color: inherit;
+  }
+
+  .section {
+    padding: 4rem 1.25rem;
+  }
+
+  .section-muted {
+    background: #f8fafc;
+  }
+
+  .section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .section-heading h2 {
+    margin: 0;
+    font-size: 2rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .card {
+    display: block;
+    padding: 1.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    background: white;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+  }
+
+  .card h3 {
+    margin: 0.75rem 0;
+  }
+
+  .card p {
+    line-height: 1.6;
+  }
+
+  .icon {
+    font-size: 2rem;
+  }
+</style>
