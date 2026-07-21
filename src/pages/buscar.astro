@@ -1,12 +1,14 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import Breadcrumbs from "../components/Breadcrumbs.astro";
+import SearchBar from "../components/SearchBar.astro";
 import ToolCard from "../components/ToolCard.astro";
-import {tools} from "../data/tools";
-const q=(Astro.url.searchParams.get("q")||"").toLowerCase();
-const results=q?tools.filter(t=>(t.name+t.category+t.description).toLowerCase().includes(q)):tools;
+import { tools } from "../data/tools";
+const q = (Astro.url.searchParams.get("q") || "").trim();
+const normalized = q.toLocaleLowerCase("es");
+const results = normalized ? tools.filter(t => `${t.name} ${t.category} ${t.description}`.toLocaleLowerCase("es").includes(normalized)) : tools;
 ---
 <BaseLayout title="Buscar herramientas | Calculaya" description="Busca entre las herramientas de Calculaya." noindex={true}>
-<section class="mx-auto max-w-7xl px-5 py-16"><h1 class="text-4xl font-black">Buscar herramientas</h1>
-<form class="mt-7 flex max-w-2xl gap-3"><input name="q" value={q} class="flex-1 rounded-xl border px-4 py-3"/><button class="rounded-xl bg-indigo-600 px-6 font-bold text-white">Buscar</button></form>
-<p class="mt-8">{results.length} resultados.</p><div class="mt-7 grid gap-5 md:grid-cols-2 lg:grid-cols-3">{results.map(t=><ToolCard {...t}/>)}</div></section>
+  <section class="page-hero search-page-hero"><div class="site-container"><Breadcrumbs items={[{label:"Inicio",href:"/"},{label:"Buscar"}]} /><p class="eyebrow">Buscador</p><h1>Encuentra tu herramienta</h1><p>Escribe el cálculo o conversión que necesitas.</p><SearchBar compact={true} /></div></section>
+  <section class="page-section"><div class="site-container"><div class="results-heading"><div><p class="eyebrow">Resultados</p><h2>{q ? `${results.length} resultados para “${q}”` : `${results.length} herramientas disponibles`}</h2></div></div>{results.length ? <div class="tool-grid">{results.map(t => <ToolCard {...t} />)}</div> : <div class="empty-state"><span>🔎</span><h2>No encontramos resultados</h2><p>Prueba con términos como IVA, hipoteca, porcentaje, fechas o conversor.</p><a class="button button-primary" href="/herramientas">Ver todas las herramientas</a></div>}</div></section>
 </BaseLayout>

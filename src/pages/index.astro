@@ -1,193 +1,46 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import SearchBar from "../components/SearchBar.astro";
+import CategoryCard from "../components/CategoryCard.astro";
+import ToolCard from "../components/ToolCard.astro";
+import SectionHeading from "../components/SectionHeading.astro";
 import { categories, popularTools } from "../data/site";
+import { tools } from "../data/tools";
 ---
+<BaseLayout title="Calculaya — Calculadoras y herramientas online gratuitas" description="Calculadoras, conversores y herramientas gratuitas para resolver operaciones cotidianas de forma rápida y clara.">
+  <section class="hero-section">
+    <div class="hero-orb hero-orb-one"></div><div class="hero-orb hero-orb-two"></div>
+    <div class="site-container hero-content">
+      <span class="hero-badge"><span class="status-dot"></span>{tools.length} herramientas online gratuitas</span>
+      <h1>La herramienta que necesitas, <span>sin complicaciones.</span></h1>
+      <p>Calcula, convierte y resuelve tareas cotidianas en segundos. Sin registro, desde cualquier dispositivo.</p>
+      <SearchBar />
+      <div class="quick-searches"><span>Prueba:</span><a href="/calculadora-iva">IVA</a><a href="/calculadora-hipoteca">Hipoteca</a><a href="/calculadora-porcentajes">Porcentajes</a><a href="/calculadora-imc">IMC</a></div>
+      <ul class="trust-list" aria-label="Ventajas"><li>Resultados instantáneos</li><li>100 % gratis</li><li>Privacidad primero</li></ul>
+    </div>
+    <div class="site-container hero-stats" aria-label="Datos de Calculaya">
+      <div><strong>{tools.length}+</strong><span>herramientas</span></div><div><strong>{categories.length}</strong><span>categorías</span></div><div><strong>0</strong><span>registros necesarios</span></div><div><strong>24/7</strong><span>siempre disponible</span></div>
+    </div>
+  </section>
 
-<BaseLayout
-  title="Calculaya — Calculadoras y herramientas online gratuitas"
-  description="Calculadoras, conversores y herramientas online gratuitas para resolver operaciones cotidianas de forma rápida."
->
-  <main>
-    <section class="hero">
-      <div class="container">
-        <span class="eyebrow">Herramientas online gratuitas</span>
+  <section class="page-section category-section">
+    <div class="site-container">
+      <SectionHeading eyebrow="Explora por tema" title="Todo lo que necesitas, bien organizado" description="Encuentra rápidamente la calculadora o conversor adecuado para cada situación." href="/categorias" />
+      <div class="category-grid">{categories.map(category => <CategoryCard {...category} />)}</div>
+    </div>
+  </section>
 
-        <h1>Calcula, convierte y resuelve en segundos</h1>
+  <section class="page-section section-soft popular-section">
+    <div class="site-container">
+      <SectionHeading eyebrow="Favoritas de los usuarios" title="Empieza por las más populares" description="Una selección de herramientas prácticas para cálculos frecuentes." href="/populares" />
+      <div class="tool-grid featured-tools">{popularTools.map((tool, index) => <ToolCard {...tool} featured={index < 3} />)}</div>
+    </div>
+  </section>
 
-        <p>
-          Encuentra calculadoras financieras, herramientas matemáticas,
-          conversores, utilidades de salud y muchas más.
-        </p>
-
-        <SearchBar />
-
-        <div class="actions">
-          <a class="primary-button" href="/herramientas">
-            Ver todas las herramientas
-          </a>
-
-          <a class="secondary-button" href="/categorias">
-            Explorar categorías
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="container">
-        <div class="section-heading">
-          <h2>Categorías principales</h2>
-          <a href="/categorias">Ver todas</a>
-        </div>
-
-        <div class="grid">
-          {
-            categories.slice(0, 6).map((category) => (
-              <a
-                class="card"
-                href={`/herramientas?categoria=${category.slug}`}
-              >
-                <span class="icon">{category.icon}</span>
-                <h3>{category.name}</h3>
-                <p>{category.description}</p>
-                <small>{category.count} herramientas</small>
-              </a>
-            ))
-          }
-        </div>
-      </div>
-    </section>
-
-    <section class="section section-muted">
-      <div class="container">
-        <div class="section-heading">
-          <h2>Herramientas populares</h2>
-          <a href="/populares">Ver todas</a>
-        </div>
-
-        <div class="grid">
-          {
-            popularTools.map((tool) => (
-              <a class="card" href={`/${tool.slug}`}>
-                <h3>{tool.title}</h3>
-                <p>{tool.description}</p>
-              </a>
-            ))
-          }
-        </div>
-      </div>
-    </section>
-  </main>
+  <section class="page-section value-section">
+    <div class="site-container value-grid">
+      <div class="value-intro"><p class="eyebrow">Hecho para ser sencillo</p><h2>Menos tiempo calculando.<br/>Más tiempo decidiendo.</h2><p>Calculaya reúne herramientas claras, rápidas y adaptadas a móvil para que llegues al resultado sin rodeos.</p><a class="button button-primary" href="/herramientas">Ver las {tools.length} herramientas</a></div>
+      <div class="benefit-grid"><article><span>⚡</span><h3>Resultados al instante</h3><p>Introduce tus datos y obtén una respuesta clara en segundos.</p></article><article><span>🔒</span><h3>Sin cuentas ni datos</h3><p>No necesitas registrarte ni compartir información personal.</p></article><article><span>📱</span><h3>Perfecta en móvil</h3><p>Diseñada para funcionar cómodamente desde cualquier pantalla.</p></article><article><span>✨</span><h3>Explicaciones claras</h3><p>No solo muestra cifras: también te ayuda a entender el resultado.</p></article></div>
+    </div>
+  </section>
 </BaseLayout>
-
-<style>
-  .hero {
-    padding: 6rem 1.25rem;
-    text-align: center;
-  }
-
-  .container {
-    width: min(1120px, 100%);
-    margin: 0 auto;
-  }
-
-  .eyebrow {
-    display: inline-block;
-    margin-bottom: 1rem;
-    font-weight: 700;
-  }
-
-  h1 {
-    max-width: 800px;
-    margin: 0 auto 1.25rem;
-    font-size: clamp(2.3rem, 6vw, 4.5rem);
-    line-height: 1.05;
-  }
-
-  .hero p {
-    max-width: 700px;
-    margin: 0 auto 2rem;
-    font-size: 1.15rem;
-    line-height: 1.7;
-  }
-
-  .actions {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-top: 1.5rem;
-  }
-
-  .primary-button,
-  .secondary-button {
-    padding: 0.9rem 1.4rem;
-    border-radius: 0.75rem;
-    text-decoration: none;
-    font-weight: 700;
-  }
-
-  .primary-button {
-    background: #2563eb;
-    color: white;
-  }
-
-  .secondary-button {
-    border: 1px solid #cbd5e1;
-    color: inherit;
-  }
-
-  .section {
-    padding: 4rem 1.25rem;
-  }
-
-  .section-muted {
-    background: #f8fafc;
-  }
-
-  .section-heading {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-
-  .section-heading h2 {
-    margin: 0;
-    font-size: 2rem;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 1.25rem;
-  }
-
-  .card {
-    display: block;
-    padding: 1.5rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 1rem;
-    background: white;
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .card:hover {
-    transform: translateY(-2px);
-  }
-
-  .card h3 {
-    margin: 0.75rem 0;
-  }
-
-  .card p {
-    line-height: 1.6;
-  }
-
-  .icon {
-    font-size: 2rem;
-  }
-</style>

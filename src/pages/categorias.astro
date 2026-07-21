@@ -1,83 +1,10 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import Breadcrumbs from "../components/Breadcrumbs.astro";
+import CategoryCard from "../components/CategoryCard.astro";
 import { categories } from "../data/site";
 ---
-
-<BaseLayout
-  title="Categorías de herramientas | Calculaya"
-  description="Explora todas las categorías de calculadoras, conversores y herramientas gratuitas de Calculaya."
->
-  <main class="page">
-    <div class="container">
-      <h1>Categorías</h1>
-
-      <p class="intro">
-        Encuentra la herramienta que necesitas organizada por temática.
-      </p>
-
-      <div class="grid">
-        {
-          categories.map((category) => (
-            <a
-              class="card"
-              href={`/herramientas?categoria=${category.slug}`}
-            >
-              <span>{category.icon}</span>
-              <h2>{category.name}</h2>
-              <p>{category.description}</p>
-              <strong>{category.count} herramientas</strong>
-            </a>
-          ))
-        }
-      </div>
-    </div>
-  </main>
+<BaseLayout title="Categorías de herramientas | Calculaya" description="Explora todas las categorías de calculadoras, conversores y herramientas gratuitas de Calculaya.">
+  <section class="page-hero"><div class="site-container"><Breadcrumbs items={[{label:"Inicio",href:"/"},{label:"Categorías"}]} /><p class="eyebrow">Directorio</p><h1>Categorías</h1><p>Encuentra la herramienta adecuada organizada por temática.</p></div></section>
+  <section class="page-section"><div class="site-container"><div class="category-grid">{categories.map(category => <CategoryCard {...category} />)}</div></div></section>
 </BaseLayout>
-
-<style>
-  .page {
-    padding: 4rem 1.25rem;
-  }
-
-  .container {
-    width: min(1120px, 100%);
-    margin: 0 auto;
-  }
-
-  h1 {
-    margin-bottom: 0.75rem;
-    font-size: clamp(2.25rem, 5vw, 3.5rem);
-  }
-
-  .intro {
-    margin-bottom: 2.5rem;
-    font-size: 1.1rem;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.25rem;
-  }
-
-  .card {
-    padding: 1.5rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 1rem;
-    background: white;
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .card span {
-    font-size: 2rem;
-  }
-
-  .card h2 {
-    margin: 0.75rem 0;
-  }
-
-  .card p {
-    line-height: 1.6;
-  }
-</style>

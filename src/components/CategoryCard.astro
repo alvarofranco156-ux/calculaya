@@ -1,7 +1,10 @@
 ---
-interface Props { name: string; slug: string; icon: string; description: string; }
-const { name, slug, icon, description } = Astro.props;
+interface Props { name: string; slug: string; icon: string; description: string; count?: number; }
+const { name, slug, icon, description, count } = Astro.props;
 ---
-<a href={`/categoria/${slug}`} class="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-950/5">
-  <div class="flex items-start gap-4"><span class="grid size-12 shrink-0 place-items-center rounded-2xl bg-indigo-50 text-2xl">{icon}</span><div><h3 class="font-bold text-slate-950 group-hover:text-indigo-600">{name}</h3><p class="mt-2 text-sm leading-6 text-slate-600">{description}</p></div></div>
+<a href={`/herramientas?categoria=${slug}`} class={`category-card category-${slug}`}>
+  <span class="category-glow" aria-hidden="true"></span>
+  <span class="category-icon" aria-hidden="true">{icon}</span>
+  <div class="category-copy"><span class="card-meta">{typeof count === "number" ? `${count} herramientas` : "Explorar"}</span><h3>{name}</h3><p>{description}</p></div>
+  <span class="card-arrow" aria-hidden="true">→</span>
 </a>

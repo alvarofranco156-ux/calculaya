@@ -1,8 +1,9 @@
 ---
-interface Props { name: string; slug: string; category: string; icon: string; description: string; }
-const { name, slug, category, icon, description } = Astro.props;
+interface Props { name: string; slug: string; category: string; icon: string; description: string; featured?: boolean; }
+const { name, slug, category, icon, description, featured = false } = Astro.props;
 ---
-<a href={`/${slug}`} class="group rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-950/5">
-  <div class="flex items-center justify-between gap-4"><span class="grid size-11 place-items-center rounded-xl bg-slate-100 text-xl">{icon}</span><span class="rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">{category}</span></div>
-  <h3 class="mt-5 text-lg font-bold text-slate-950 group-hover:text-indigo-600">{name}</h3><p class="mt-2 text-sm leading-6 text-slate-600">{description}</p><span class="mt-5 inline-flex items-center gap-2 text-sm font-bold text-indigo-600">Abrir herramienta →</span>
+<a href={`/${slug}`} class:list={["tool-card", featured && "tool-card-featured"]}>
+  <div class="tool-card-top"><span class="tool-icon" aria-hidden="true">{icon}</span><span class="category-pill">{category}</span></div>
+  <div class="tool-card-copy"><h3>{name}</h3><p>{description}</p></div>
+  <span class="tool-link">Abrir herramienta <span class="round-arrow" aria-hidden="true">→</span></span>
 </a>

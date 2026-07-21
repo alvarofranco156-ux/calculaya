@@ -1,79 +1,178 @@
 ---
-const {kind}=Astro.props;
+const { kind, toolName = "esta herramienta" } = Astro.props;
 ---
-<div data-calc data-kind={kind} class="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
-<div class="fields grid gap-4"></div>
-<button class="go mt-5 w-full rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white">Calcular</button>
-<div class="result mt-5 hidden rounded-2xl bg-indigo-50 p-5" aria-live="polite"></div>
-</div>
+<section class="calculator-shell" data-calculator data-kind={kind} aria-label="Calculadora">
+  <div class="calculator-heading">
+    <div class="calculator-title-row"><span aria-hidden="true">✦</span><div><p class="calculator-kicker">Cálculo online</p><h2>Introduce los datos</h2></div></div>
+    <span class="calculator-status" data-status>Lista</span>
+  </div>
+  <p class="calculator-helper">Completa los campos de {toolName.toLowerCase()}. Los cálculos se realizan en este dispositivo.</p>
+
+  <form class="calculator-form" data-form novalidate>
+    <div class="calculator-fields" data-fields></div>
+    <p class="calculator-error" data-error role="alert" hidden></p>
+    <button class="calculator-primary" type="submit">Calcular resultado</button>
+  </form>
+
+  <div class="calculator-result" data-result hidden aria-live="polite" aria-atomic="true">
+    <div class="result-topline">
+      <span>Resultado</span>
+      <button type="button" class="result-copy" data-copy>Copiar</button>
+    </div>
+    <div class="result-value" data-result-value></div>
+    <p class="result-detail" data-result-detail></p>
+  </div>
+
+  <button type="button" class="calculator-reset" data-reset>Restablecer valores</button>
+</section>
+
 <script>
-const C={
-iva:[["a","Importe","number",100],["b","IVA %","number",21]],discount:[["a","Precio","number",100],["b","Descuento %","number",20]],
-margin:[["a","Coste","number",50],["b","Venta","number",80]],loan:[["a","Capital","number",100000],["b","Interés anual %","number",3],["c","Años","number",20]],
-simple:[["a","Capital","number",1000],["b","Interés %","number",5],["c","Años","number",3]],compound:[["a","Capital","number",1000],["b","Interés %","number",5],["c","Años","number",10]],
-rule72:[["a","Interés %","number",6]],tip:[["a","Cuenta","number",60],["b","Propina %","number",10],["c","Personas","number",2]],saving:[["a","Objetivo","number",10000],["b","Actual","number",2000],["c","Meses","number",24]],
-percent:[["a","Cantidad","number",200],["b","Porcentaje","number",15]],change:[["a","Inicial","number",100],["b","Final","number",125]],rule3:[["a","A","number",2],["b","B","number",10],["c","C","number",5]],
-mean:[["a","Números separados por comas","text","10,20,30"]],median:[["a","Números separados por comas","text","10,20,30,40"]],gcd:[["a","Primer entero","number",48],["b","Segundo entero","number",18]],lcm:[["a","Primer entero","number",12],["b","Segundo entero","number",18]],
-power:[["a","Base","number",2],["b","Exponente","number",8]],sqrt:[["a","Número","number",144]],quadratic:[["a","Coeficiente a","number",1],["b","Coeficiente b","number",-3],["c","Coeficiente c","number",2]],
-bmi:[["a","Peso kg","number",70],["b","Altura cm","number",175]],bmr:[["a","Peso kg","number",70],["b","Altura cm","number",175],["c","Edad","number",35]],calories:[["a","Peso kg","number",70],["b","Altura cm","number",175],["c","Edad","number",35]],
-ideal:[["a","Altura cm","number",175]],water:[["a","Peso kg","number",70]],pace:[["a","Distancia km","number",10],["b","Tiempo minutos","number",50]],
-age:[["a","Nacimiento","date","1990-01-01"]],datediff:[["a","Inicio","date","2026-01-01"],["b","Final","date","2026-12-31"]],adddays:[["a","Fecha","date","2026-01-01"],["b","Días","number",30]],workdays:[["a","Inicio","date","2026-01-01"],["b","Final","date","2026-01-31"]],countdown:[["a","Fecha objetivo","date","2026-12-31"]],
-temp:[["a","Celsius","number",20]],weight:[["a","Kilogramos","number",10]],distance:[["a","Kilómetros","number",10]],length:[["a","Centímetros","number",10]],volume:[["a","Litros","number",10]],area:[["a","Metros cuadrados","number",10]],speed:[["a","km/h","number",100]],bytes:[["a","Megabytes","number",10]],time:[["a","Horas decimales","number",2.5]],energy:[["a","Julios","number",100]],
-words:[["a","Texto","textarea","Escribe aquí..."]],chars:[["a","Texto","textarea","Escribe aquí..."]],password:[["a","Longitud","number",16]],uuid:[],random:[["a","Mínimo","number",1],["b","Máximo","number",100]],fuel:[["a","Kilómetros","number",500],["b","Litros","number",35]],paint:[["a","Superficie m²","number",60],["b","Manos","number",2],["c","Rendimiento m²/l","number",10]],tiles:[["a","Superficie m²","number",20],["b","Área pieza m²","number",0.18],["c","Desperdicio %","number",10]],reading:[["a","Texto","textarea","Escribe aquí..."]]
+const definitions = {
+  iva: { fields:[['amount','Importe sin IVA','number',100,{min:0,step:'any',suffix:'€'}],['rate','Tipo de IVA','number',21,{min:0,max:100,step:'any',suffix:'%'}]], calculate:v=>({value:`${fmt(v.amount*v.rate/100)} € de IVA`,detail:`Total con IVA: ${fmt(v.amount*(1+v.rate/100))} €`}) },
+  discount: { fields:[['price','Precio original','number',100,{min:0,step:'any',suffix:'€'}],['rate','Descuento','number',20,{min:0,max:100,step:'any',suffix:'%'}]], calculate:v=>({value:`${fmt(v.price*(1-v.rate/100))} €`,detail:`Ahorras ${fmt(v.price*v.rate/100)} € sobre el precio original.`}) },
+  margin: { fields:[['cost','Coste','number',50,{min:0,step:'any',suffix:'€'}],['sale','Precio de venta','number',80,{min:0.01,step:'any',suffix:'€'}]], validate:v=>v.sale>0?'':'El precio de venta debe ser mayor que cero.', calculate:v=>({value:`${fmt((v.sale-v.cost)/v.sale*100)} % de margen`,detail:`Beneficio bruto: ${fmt(v.sale-v.cost)} € · Recargo sobre coste: ${v.cost?fmt((v.sale-v.cost)/v.cost*100):'—'} %`}) },
+  loan: { fields:[['capital','Capital solicitado','number',100000,{min:1,step:'any',suffix:'€'}],['rate','Interés anual','number',3,{min:0,step:'any',suffix:'%'}],['years','Plazo','number',20,{min:1,max:50,step:1,suffix:'años'}]], calculate:v=>{const months=v.years*12,r=v.rate/1200,p=r?v.capital*r*(1+r)**months/((1+r)**months-1):v.capital/months,total=p*months;return {value:`${fmt(p)} € al mes`,detail:`Total pagado: ${fmt(total)} € · Intereses: ${fmt(total-v.capital)} € · ${months} cuotas.`}} },
+  simple: { fields:[['capital','Capital inicial','number',1000,{min:0,step:'any',suffix:'€'}],['rate','Interés anual','number',5,{step:'any',suffix:'%'}],['years','Años','number',3,{min:0,step:'any',suffix:'años'}]], calculate:v=>({value:`${fmt(v.capital*(1+v.rate/100*v.years))} €`,detail:`Intereses generados: ${fmt(v.capital*v.rate/100*v.years)} €`}) },
+  compound: { fields:[['capital','Capital inicial','number',1000,{min:0,step:'any',suffix:'€'}],['rate','Interés anual','number',5,{step:'any',suffix:'%'}],['years','Años','number',10,{min:0,step:'any',suffix:'años'}]], calculate:v=>{const total=v.capital*(1+v.rate/100)**v.years;return {value:`${fmt(total)} €`,detail:`Ganancia acumulada: ${fmt(total-v.capital)} €`}} },
+  rule72: { fields:[['rate','Rentabilidad anual','number',6,{min:0.01,step:'any',suffix:'%'}]], calculate:v=>({value:`${fmt(72/v.rate)} años`,detail:'Estimación aproximada del tiempo necesario para duplicar una inversión.'}) },
+  tip: { fields:[['bill','Importe de la cuenta','number',60,{min:0,step:'any',suffix:'€'}],['rate','Propina','number',10,{min:0,step:'any',suffix:'%'}],['people','Número de personas','number',2,{min:1,step:1}]], calculate:v=>{const total=v.bill*(1+v.rate/100);return {value:`${fmt(total/v.people)} € por persona`,detail:`Propina: ${fmt(v.bill*v.rate/100)} € · Total: ${fmt(total)} €`}} },
+  saving: { fields:[['goal','Objetivo','number',10000,{min:0,step:'any',suffix:'€'}],['current','Ahorro actual','number',2000,{min:0,step:'any',suffix:'€'}],['months','Meses disponibles','number',24,{min:1,step:1,suffix:'meses'}]], calculate:v=>{const remaining=Math.max(0,v.goal-v.current);return {value:`${fmt(remaining/v.months)} € al mes`,detail:`Te faltan ${fmt(remaining)} € para alcanzar el objetivo.`}} },
+  percent: { fields:[['amount','Cantidad','number',200,{step:'any'}],['rate','Porcentaje','number',15,{step:'any',suffix:'%'}]], calculate:v=>({value:fmt(v.amount*v.rate/100),detail:`El ${fmt(v.rate)} % de ${fmt(v.amount)} es ${fmt(v.amount*v.rate/100)}.`}) },
+  change: { fields:[['initial','Valor inicial','number',100,{step:'any'}],['final','Valor final','number',125,{step:'any'}]], validate:v=>v.initial!==0?'':'El valor inicial no puede ser cero.', calculate:v=>{const p=(v.final-v.initial)/Math.abs(v.initial)*100;return {value:`${fmt(p)} %`,detail:`Cambio absoluto: ${fmt(v.final-v.initial)}.`}} },
+  rule3: { fields:[['a','Primer valor (A)','number',2,{step:'any'}],['b','Segundo valor (B)','number',10,{step:'any'}],['c','Tercer valor (C)','number',5,{step:'any'}]], validate:v=>v.a!==0?'':'El primer valor no puede ser cero.', calculate:v=>({value:`x = ${fmt(v.b*v.c/v.a)}`,detail:`Proporción aplicada: A / B = C / x.`}) },
+  mean: { fields:[['list','Números separados por comas','text','10, 20, 30',{}]], parse:parseList, calculate:v=>({value:fmt(v.list.reduce((a,b)=>a+b,0)/v.list.length),detail:`Calculado con ${v.list.length} valores.`}) },
+  median: { fields:[['list','Números separados por comas','text','10, 20, 30, 40',{}]], parse:parseList, calculate:v=>{const x=[...v.list].sort((a,b)=>a-b),m=Math.floor(x.length/2),r=x.length%2?x[m]:(x[m-1]+x[m])/2;return {value:fmt(r),detail:`Lista ordenada: ${x.map(fmt).join(', ')}`}} },
+  gcd: { fields:[['a','Primer entero','number',48,{step:1}],['b','Segundo entero','number',18,{step:1}]], calculate:v=>({value:String(gcd(v.a,v.b)),detail:'Máximo común divisor de ambos números.'}) },
+  lcm: { fields:[['a','Primer entero','number',12,{step:1}],['b','Segundo entero','number',18,{step:1}]], validate:v=>(v.a!==0&&v.b!==0)?'':'Los valores no pueden ser cero.', calculate:v=>({value:String(Math.abs(v.a*v.b)/gcd(v.a,v.b)),detail:'Mínimo común múltiplo de ambos números.'}) },
+  power: { fields:[['base','Base','number',2,{step:'any'}],['exponent','Exponente','number',8,{step:'any'}]], calculate:v=>({value:fmt(v.base**v.exponent),detail:`${fmt(v.base)} elevado a ${fmt(v.exponent)}.`}) },
+  sqrt: { fields:[['number','Número','number',144,{min:0,step:'any'}]], calculate:v=>({value:fmt(Math.sqrt(v.number)),detail:`Raíz cuadrada de ${fmt(v.number)}.`}) },
+  quadratic: { fields:[['a','Coeficiente a','number',1,{step:'any'}],['b','Coeficiente b','number',-3,{step:'any'}],['c','Coeficiente c','number',2,{step:'any'}]], validate:v=>v.a!==0?'':'El coeficiente a no puede ser cero.', calculate:v=>{const d=v.b**2-4*v.a*v.c;if(d<0)return {value:'Sin soluciones reales',detail:`El discriminante es ${fmt(d)}.`};const x1=(-v.b+Math.sqrt(d))/(2*v.a),x2=(-v.b-Math.sqrt(d))/(2*v.a);return {value:`x₁ = ${fmt(x1)} · x₂ = ${fmt(x2)}`,detail:`Discriminante: ${fmt(d)}.`}} },
+  bmi: { fields:[['weight','Peso','number',70,{min:1,step:'any',suffix:'kg'}],['height','Altura','number',175,{min:1,step:'any',suffix:'cm'}]], calculate:v=>{const bmi=v.weight/(v.height/100)**2;const label=bmi<18.5?'bajo peso':bmi<25?'peso normal':bmi<30?'sobrepeso':'obesidad';return {value:`${fmt(bmi)} kg/m²`,detail:`Clasificación orientativa: ${label}.`}} },
+  bmr: { fields:[['weight','Peso','number',70,{min:1,step:'any',suffix:'kg'}],['height','Altura','number',175,{min:1,step:'any',suffix:'cm'}],['age','Edad','number',35,{min:1,max:120,step:1,suffix:'años'}]], calculate:v=>({value:`${fmt(10*v.weight+6.25*v.height-5*v.age)} kcal/día`,detail:'Estimación base sin ajuste por sexo ni actividad física.'}) },
+  calories: { fields:[['weight','Peso','number',70,{min:1,step:'any',suffix:'kg'}],['height','Altura','number',175,{min:1,step:'any',suffix:'cm'}],['age','Edad','number',35,{min:1,max:120,step:1,suffix:'años'}]], calculate:v=>({value:`${fmt((10*v.weight+6.25*v.height-5*v.age)*1.4)} kcal/día`,detail:'Estimación orientativa con actividad ligera.'}) },
+  ideal: { fields:[['height','Altura','number',175,{min:100,max:230,step:'any',suffix:'cm'}]], calculate:v=>({value:`${fmt(50+2.3*Math.max(0,v.height/2.54-60))} kg`,detail:'Referencia aproximada mediante la fórmula de Devine.'}) },
+  water: { fields:[['weight','Peso','number',70,{min:1,step:'any',suffix:'kg'}]], calculate:v=>({value:`${fmt(v.weight*0.035)} litros/día`,detail:'Estimación general de 35 ml por kilogramo de peso.'}) },
+  pace: { fields:[['distance','Distancia','number',10,{min:0.01,step:'any',suffix:'km'}],['minutes','Tiempo total','number',50,{min:0.01,step:'any',suffix:'min'}]], calculate:v=>{const p=v.minutes/v.distance,m=Math.floor(p),s=Math.round((p-m)*60);return {value:`${m}:${String(s).padStart(2,'0')} min/km`,detail:`Velocidad media: ${fmt(v.distance/(v.minutes/60))} km/h.`}} },
+  age: { fields:[['birth','Fecha de nacimiento','date','1990-01-01',{}]], calculate:v=>{const d=new Date(v.birth+'T00:00:00'),t=new Date();let y=t.getFullYear()-d.getFullYear();const birthday=new Date(t.getFullYear(),d.getMonth(),d.getDate());if(t<birthday)y--;return {value:`${y} años`,detail:`Has vivido aproximadamente ${Math.floor((t-d)/86400000).toLocaleString('es-ES')} días.`}} },
+  datediff: { fields:[['start','Fecha inicial','date','2026-01-01',{}],['end','Fecha final','date','2026-12-31',{}]], calculate:v=>{const days=Math.round(Math.abs(new Date(v.end)-new Date(v.start))/86400000);return {value:`${days} días`,detail:`Equivale aproximadamente a ${fmt(days/7)} semanas.`}} },
+  adddays: { fields:[['date','Fecha inicial','date','2026-01-01',{}],['days','Días que añadir','number',30,{step:1}]], calculate:v=>{const d=new Date(v.date+'T12:00:00');d.setDate(d.getDate()+v.days);return {value:d.toLocaleDateString('es-ES'),detail:`Resultado tras añadir ${fmt(v.days)} días.`}} },
+  workdays: { fields:[['start','Fecha inicial','date','2026-01-01',{}],['end','Fecha final','date','2026-01-31',{}]], validate:v=>new Date(v.end)>=new Date(v.start)?'':'La fecha final debe ser posterior a la inicial.', calculate:v=>{let count=0;for(let d=new Date(v.start+'T12:00:00'),e=new Date(v.end+'T12:00:00');d<=e;d.setDate(d.getDate()+1))if(d.getDay()!==0&&d.getDay()!==6)count++;return {value:`${count} días laborables`,detail:'No se incluyen sábados ni domingos; los festivos no se descuentan.'}} },
+  countdown: { fields:[['date','Fecha objetivo','date','2026-12-31',{}]], calculate:v=>{const days=Math.ceil((new Date(v.date+'T23:59:59')-new Date())/86400000);return {value:days>=0?`${days} días`:`Hace ${Math.abs(days)} días`,detail:'El cálculo se actualiza según la fecha actual.'}} },
+  temp: { fields:[['value','Grados Celsius','number',20,{step:'any',suffix:'°C'}]], calculate:v=>({value:`${fmt(v.value*9/5+32)} °F`,detail:`También son ${fmt(v.value+273.15)} K.`}) },
+  weight: { fields:[['value','Kilogramos','number',10,{step:'any',suffix:'kg'}]], calculate:v=>({value:`${fmt(v.value*2.2046226218)} lb`,detail:`Equivale a ${fmt(v.value*35.27396195)} oz.`}) },
+  distance: { fields:[['value','Kilómetros','number',10,{step:'any',suffix:'km'}]], calculate:v=>({value:`${fmt(v.value*0.6213711922)} mi`,detail:`Equivale a ${fmt(v.value*1000)} metros.`}) },
+  length: { fields:[['value','Centímetros','number',10,{step:'any',suffix:'cm'}]], calculate:v=>({value:`${fmt(v.value/2.54)} in`,detail:`Equivale a ${fmt(v.value/100)} metros.`}) },
+  volume: { fields:[['value','Litros','number',10,{step:'any',suffix:'L'}]], calculate:v=>({value:`${fmt(v.value/3.785411784)} gal (EE. UU.)`,detail:`Equivale a ${fmt(v.value*1000)} mililitros.`}) },
+  area: { fields:[['value','Metros cuadrados','number',10,{step:'any',suffix:'m²'}]], calculate:v=>({value:`${fmt(v.value*10.7639104)} ft²`,detail:`Equivale a ${fmt(v.value/10000)} hectáreas.`}) },
+  speed: { fields:[['value','Kilómetros por hora','number',100,{step:'any',suffix:'km/h'}]], calculate:v=>({value:`${fmt(v.value*0.6213711922)} mph`,detail:`Equivale a ${fmt(v.value/3.6)} m/s.`}) },
+  bytes: { fields:[['value','Megabytes','number',10,{step:'any',suffix:'MB'}]], calculate:v=>({value:`${fmt(v.value*1024*1024)} bytes`,detail:`Equivale a ${fmt(v.value/1024)} GB (base 1024).`}) },
+  time: { fields:[['value','Horas decimales','number',2.5,{step:'any',suffix:'h'}]], calculate:v=>{const h=Math.trunc(v.value),m=Math.round(Math.abs(v.value-h)*60);return {value:`${h} h ${m} min`,detail:`Total: ${fmt(v.value*60)} minutos.`}} },
+  energy: { fields:[['value','Julios','number',100,{step:'any',suffix:'J'}]], calculate:v=>({value:`${fmt(v.value/4.184)} cal`,detail:`Equivale a ${fmt(v.value/4184)} kcal alimentarias.`}) },
+  words: { fields:[['text','Texto','textarea','Escribe aquí tu texto...',{}]], calculate:v=>textStats(v.text,'words') },
+  chars: { fields:[['text','Texto','textarea','Escribe aquí tu texto...',{}]], calculate:v=>textStats(v.text,'chars') },
+  reading: { fields:[['text','Texto','textarea','Escribe aquí tu texto...',{}]], calculate:v=>textStats(v.text,'reading') },
+  password: { fields:[['length','Longitud','number',16,{min:6,max:128,step:1,suffix:'caracteres'}]], calculate:v=>{const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*?';const data=crypto.getRandomValues(new Uint32Array(v.length));const pass=Array.from(data,n=>chars[n%chars.length]).join('');return {value:pass,detail:`Contraseña aleatoria de ${v.length} caracteres.`}} },
+  uuid: { fields:[], calculate:()=>({value:crypto.randomUUID(),detail:'Identificador UUID v4 generado localmente en tu navegador.'}) },
+  random: { fields:[['min','Mínimo','number',1,{step:1}],['max','Máximo','number',100,{step:1}]], validate:v=>v.max>=v.min?'':'El máximo debe ser mayor o igual que el mínimo.', calculate:v=>({value:String(Math.floor(Math.random()*(v.max-v.min+1))+v.min),detail:`Número entero aleatorio entre ${v.min} y ${v.max}.`}) },
+  fuel: { fields:[['distance','Distancia recorrida','number',500,{min:0.01,step:'any',suffix:'km'}],['litres','Combustible consumido','number',35,{min:0,step:'any',suffix:'L'}]], calculate:v=>({value:`${fmt(v.litres/v.distance*100)} L/100 km`,detail:`Rendimiento: ${fmt(v.distance/v.litres)} km/L.`}) },
+  paint: { fields:[['surface','Superficie','number',60,{min:0,step:'any',suffix:'m²'}],['coats','Número de manos','number',2,{min:1,step:1}],['coverage','Rendimiento','number',10,{min:0.01,step:'any',suffix:'m²/L'}]], calculate:v=>({value:`${fmt(v.surface*v.coats/v.coverage)} litros`,detail:'Añade un pequeño margen adicional por pérdidas y retoques.'}) },
+  tiles: { fields:[['surface','Superficie','number',20,{min:0,step:'any',suffix:'m²'}],['piece','Área de cada pieza','number',0.18,{min:0.0001,step:'any',suffix:'m²'}],['waste','Margen de desperdicio','number',10,{min:0,max:100,step:'any',suffix:'%'}]], calculate:v=>({value:`${Math.ceil(v.surface/v.piece*(1+v.waste/100))} piezas`,detail:`Incluye un ${fmt(v.waste)} % adicional para cortes y roturas.`}) }
 };
-document.querySelectorAll("[data-calc]").forEach(root=>{
-const kind=root.dataset.kind,box=root.querySelector(".fields"),res=root.querySelector(".result");
-(C[kind]||[]).forEach(([id,l,t,d])=>{let lab=document.createElement("label");lab.innerHTML=`<span class="mb-2 block text-sm font-bold">${l}</span>`;let el=t==="textarea"?document.createElement("textarea"):document.createElement("input");if(t!=="textarea")el.type=t;el.value=d;el.id=id;el.className="w-full rounded-xl border border-slate-200 px-4 py-3";lab.appendChild(el);box.appendChild(lab)});
-const v=id=>{let e=root.querySelector("#"+id);return e?.type==="number"?+e.value:e?.value},n=x=>new Intl.NumberFormat("es-ES",{maximumFractionDigits:3}).format(x),nums=s=>String(s).split(/[,;\s]+/).map(Number).filter(Number.isFinite),G=(a,b)=>{a=Math.abs(a|0);b=Math.abs(b|0);while(b)[a,b]=[b,a%b];return a};
-root.querySelector(".go").onclick=()=>{let o="",a=v("a"),b=v("b"),c=v("c");
-if(kind==="iva")o=`IVA: <b>${n(a*b/100)}</b> · Total: <b>${n(a*(1+b/100))}</b>`;
-else if(kind==="discount")o=`Precio final: <b>${n(a*(1-b/100))}</b>`;
-else if(kind==="margin")o=`Beneficio: <b>${n(b-a)}</b> · Margen: <b>${n((b-a)/b*100)}%</b>`;
-else if(kind==="loan"){let r=b/1200,m=c*12,q=r?a*r*(1+r)**m/((1+r)**m-1):a/m;o=`Cuota mensual: <b>${n(q)} €</b>`}
-else if(kind==="simple")o=`Capital final: <b>${n(a*(1+b/100*c))}</b>`;
-else if(kind==="compound")o=`Capital final: <b>${n(a*(1+b/100)**c)}</b>`;
-else if(kind==="rule72")o=`Años aproximados: <b>${n(72/a)}</b>`;
-else if(kind==="tip")o=`Total: <b>${n(a*(1+b/100))} €</b> · Por persona: <b>${n(a*(1+b/100)/c)} €</b>`;
-else if(kind==="saving")o=`Ahorro mensual: <b>${n((a-b)/c)} €</b>`;
-else if(kind==="percent")o=`Resultado: <b>${n(a*b/100)}</b>`;
-else if(kind==="change")o=`Variación: <b>${n((b-a)/a*100)}%</b>`;
-else if(kind==="rule3")o=`x = <b>${n(b*c/a)}</b>`;
-else if(kind==="mean"){let x=nums(a);o=`Media: <b>${n(x.reduce((p,q)=>p+q,0)/x.length)}</b>`}
-else if(kind==="median"){let x=nums(a).sort((p,q)=>p-q),m=x.length>>1;o=`Mediana: <b>${n(x.length%2?x[m]:(x[m-1]+x[m])/2)}</b>`}
-else if(kind==="gcd")o=`MCD: <b>${G(a,b)}</b>`;
-else if(kind==="lcm")o=`MCM: <b>${Math.abs(a*b)/G(a,b)}</b>`;
-else if(kind==="power")o=`Resultado: <b>${n(a**b)}</b>`;
-else if(kind==="sqrt")o=`Resultado: <b>${n(Math.sqrt(a))}</b>`;
-else if(kind==="quadratic"){let d=b*b-4*a*c;o=d<0?"Sin soluciones reales":`x₁: <b>${n((-b+Math.sqrt(d))/(2*a))}</b> · x₂: <b>${n((-b-Math.sqrt(d))/(2*a))}</b>`}
-else if(kind==="bmi")o=`IMC: <b>${n(a/(b/100)**2)}</b>`;
-else if(kind==="bmr")o=`TMB estimada: <b>${n(10*a+6.25*b-5*c)} kcal/día</b>`;
-else if(kind==="calories")o=`Mantenimiento aproximado: <b>${n((10*a+6.25*b-5*c)*1.4)} kcal/día</b>`;
-else if(kind==="ideal")o=`Referencia aproximada: <b>${n(50+2.3*Math.max(0,a/2.54-60))} kg</b>`;
-else if(kind==="water")o=`Agua aproximada: <b>${n(a*.035)} litros/día</b>`;
-else if(kind==="pace")o=`Ritmo: <b>${n(b/a)} min/km</b>`;
-else if(kind==="age"){let d=new Date(a),t=new Date(),y=t.getFullYear()-d.getFullYear();if(t<new Date(t.getFullYear(),d.getMonth(),d.getDate()))y--;o=`Edad: <b>${y} años</b>`}
-else if(kind==="datediff")o=`Diferencia: <b>${Math.abs(new Date(b)-new Date(a))/86400000} días</b>`;
-else if(kind==="adddays"){let d=new Date(a);d.setDate(d.getDate()+b);o=`Fecha: <b>${d.toLocaleDateString("es-ES")}</b>`}
-else if(kind==="workdays"){let s=new Date(a),e=new Date(b),x=0;for(let d=new Date(s);d<=e;d.setDate(d.getDate()+1))if(d.getDay()!=0&&d.getDay()!=6)x++;o=`Laborables: <b>${x}</b>`}
-else if(kind==="countdown")o=`Faltan: <b>${Math.ceil((new Date(a)-new Date())/86400000)} días</b>`;
-else if(kind==="temp")o=`Fahrenheit: <b>${n(a*9/5+32)} °F</b>`;
-else if(kind==="weight")o=`Libras: <b>${n(a*2.20462)}</b>`;
-else if(kind==="distance")o=`Millas: <b>${n(a*.621371)}</b>`;
-else if(kind==="length")o=`Pulgadas: <b>${n(a/2.54)}</b>`;
-else if(kind==="volume")o=`Galones: <b>${n(a/3.78541)}</b>`;
-else if(kind==="area")o=`Pies²: <b>${n(a*10.7639)}</b>`;
-else if(kind==="speed")o=`mph: <b>${n(a*.621371)}</b>`;
-else if(kind==="bytes")o=`Bytes: <b>${n(a*1024*1024)}</b>`;
-else if(kind==="time")o=`Resultado: <b>${Math.floor(a)} h ${Math.round((a-Math.floor(a))*60)} min</b>`;
-else if(kind==="energy")o=`Calorías: <b>${n(a/4.184)}</b>`;
-else if(kind==="words"||kind==="reading"){let x=String(a).trim().split(/\s+/).filter(Boolean).length;o=`Palabras: <b>${x}</b> · Lectura: <b>${Math.max(1,Math.ceil(x/200))} min</b>`}
-else if(kind==="chars")o=`Caracteres: <b>${String(a).length}</b> · Sin espacios: <b>${String(a).replace(/\s/g,"").length}</b>`;
-else if(kind==="password"){let x="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";o=`Contraseña: <b class="break-all">${Array.from(crypto.getRandomValues(new Uint32Array(a)),z=>x[z%x.length]).join("")}</b>`}
-else if(kind==="uuid")o=`UUID: <b class="break-all">${crypto.randomUUID()}</b>`;
-else if(kind==="random")o=`Número: <b>${Math.floor(Math.random()*(b-a+1))+a}</b>`;
-else if(kind==="fuel")o=`Consumo: <b>${n(b/a*100)} L/100 km</b>`;
-else if(kind==="paint")o=`Pintura: <b>${n(a*b/c)} litros</b>`;
-else if(kind==="tiles")o=`Piezas: <b>${Math.ceil(a/b*(1+c/100))}</b>`;
-res.innerHTML=o||"Revisa los datos";res.classList.remove("hidden")};
-});
+
+function fmt(value){return new Intl.NumberFormat('es-ES',{maximumFractionDigits:3}).format(value)}
+function gcd(a,b){a=Math.abs(Math.trunc(a));b=Math.abs(Math.trunc(b));while(b)[a,b]=[b,a%b];return a}
+function parseList(values){const list=String(values.list||'').split(/[,;\s]+/).map(Number).filter(Number.isFinite);if(!list.length)throw new Error('Introduce al menos un número válido.');return {list}}
+function textStats(text,mode){const clean=String(text||''),words=clean.trim()?clean.trim().split(/\s+/).length:0,chars=clean.length,noSpaces=clean.replace(/\s/g,'').length,minutes=words?Math.max(1,Math.ceil(words/200)):0;if(mode==='chars')return {value:`${chars} caracteres`,detail:`${noSpaces} sin espacios · ${words} palabras.`};if(mode==='reading')return {value:`${minutes} min de lectura`,detail:`${words} palabras · velocidad estimada de 200 palabras/min.`};return {value:`${words} palabras`,detail:`${chars} caracteres · ${minutes} min de lectura.`}}
+
+for(const root of document.querySelectorAll('[data-calculator]')){
+  const kind=root.dataset.kind;
+  const definition=definitions[kind];
+  const form=root.querySelector('[data-form]');
+  const fieldsBox=root.querySelector('[data-fields]');
+  const result=root.querySelector('[data-result]');
+  const resultValue=root.querySelector('[data-result-value]');
+  const resultDetail=root.querySelector('[data-result-detail]');
+  const errorBox=root.querySelector('[data-error]');
+  const status=root.querySelector('[data-status]');
+  const copyButton=root.querySelector('[data-copy]');
+
+  if(!definition){
+    errorBox.textContent='Esta herramienta todavía no tiene una configuración disponible.';
+    errorBox.hidden=false;
+    form.querySelector('button').disabled=true;
+    continue;
+  }
+
+  for(const [name,label,type,defaultValue,options={}] of definition.fields){
+    const wrapper=document.createElement('label');
+    wrapper.className='field-group';
+    const labelRow=document.createElement('span');
+    labelRow.className='field-label';
+    labelRow.textContent=label;
+    if(options.suffix){const suffix=document.createElement('small');suffix.textContent=options.suffix;labelRow.appendChild(suffix)}
+    const control=type==='textarea'?document.createElement('textarea'):document.createElement('input');
+    control.name=name;
+    control.dataset.default=String(defaultValue);
+    control.value=defaultValue;
+    control.className='field-control';
+    if(type!=='textarea')control.type=type;
+    if(options.min!==undefined)control.min=String(options.min);
+    if(options.max!==undefined)control.max=String(options.max);
+    if(options.step!==undefined)control.step=String(options.step);
+    control.required=true;
+    if(type==='textarea')control.rows=5;
+    wrapper.append(labelRow,control);
+    fieldsBox.appendChild(wrapper);
+  }
+
+  const readValues=()=>{
+    const values={};
+    for(const [name,,type] of definition.fields){
+      const control=form.elements.namedItem(name);
+      if(!control || !String(control.value).trim())throw new Error('Completa todos los campos antes de calcular.');
+      values[name]=type==='number'?Number(control.value):control.value;
+      if(type==='number'&&!Number.isFinite(values[name]))throw new Error('Revisa los valores numéricos introducidos.');
+      if(!control.checkValidity())throw new Error('Hay un valor fuera del rango permitido.');
+    }
+    return definition.parse?definition.parse(values):values;
+  };
+
+  const calculate=()=>{
+    try{
+      const values=readValues();
+      const validation=definition.validate?.(values);
+      if(validation)throw new Error(validation);
+      const output=definition.calculate(values);
+      if(!output||!output.value)throw new Error('No se ha podido obtener un resultado.');
+      resultValue.textContent=output.value;
+      resultDetail.textContent=output.detail||'';
+      result.hidden=false;
+      errorBox.hidden=true;
+      status.textContent='Calculado';
+      status.classList.add('is-complete');
+      copyButton.textContent='Copiar';
+    }catch(error){
+      errorBox.textContent=error instanceof Error?error.message:'Revisa los datos introducidos.';
+      errorBox.hidden=false;
+      result.hidden=true;
+      status.textContent='Revisar datos';
+      status.classList.remove('is-complete');
+    }
+  };
+
+  form.addEventListener('submit',event=>{event.preventDefault();calculate()});
+  root.querySelector('[data-reset]').addEventListener('click',()=>{
+    for(const control of form.querySelectorAll('.field-control'))control.value=control.dataset.default||'';
+    result.hidden=true;errorBox.hidden=true;status.textContent='Lista';status.classList.remove('is-complete');
+  });
+  copyButton.addEventListener('click',async()=>{
+    const text=[resultValue.textContent,resultDetail.textContent].filter(Boolean).join(' — ');
+    try{await navigator.clipboard.writeText(text);copyButton.textContent='Copiado ✓'}catch{copyButton.textContent='No se pudo copiar'}
+  });
+}
 </script>
+
+<style>
+.calculator-shell{align-self:start;border:1px solid #e2e8f0;border-radius:1.35rem;background:#fff;padding:1.35rem;box-shadow:0 18px 50px rgba(15,23,42,.09)}
+.calculator-heading,.result-topline{display:flex;align-items:center;justify-content:space-between;gap:1rem}.calculator-title-row{display:flex;align-items:center;gap:.75rem}.calculator-title-row>span{display:grid;place-items:center;width:2.35rem;height:2.35rem;border-radius:.75rem;background:#eef2ff;color:#4f46e5;font-weight:900}.calculator-kicker{margin:0;font-size:.68rem;font-weight:850;letter-spacing:.09em;text-transform:uppercase;color:#6366f1}.calculator-heading h2{margin:.15rem 0 0;font-size:1.15rem;font-weight:900;color:#0f172a}.calculator-status{border-radius:999px;background:#f8fafc;padding:.35rem .6rem;font-size:.68rem;font-weight:800;color:#64748b}.calculator-status.is-complete{background:#ecfdf5;color:#047857}.calculator-helper{margin:.9rem 0 0;color:#64748b;font-size:.8rem;line-height:1.5}.calculator-form{margin-top:1.15rem}.calculator-fields{display:grid;gap:.85rem}.field-group{display:grid;gap:.38rem}.field-label{display:flex;align-items:center;justify-content:space-between;gap:1rem;font-size:.82rem;font-weight:800;color:#334155}.field-label small{font-size:.68rem;font-weight:750;color:#94a3b8}.field-control{width:100%;border:1px solid #d5dce7;border-radius:.75rem;background:#fbfdff;padding:.72rem .82rem;color:#0f172a;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}.field-control:hover{border-color:#b8c3d3;background:#fff}.field-control:focus{border-color:#6366f1;background:#fff;box-shadow:0 0 0 3px rgba(99,102,241,.11)}textarea.field-control{resize:vertical;min-height:6.5rem}.calculator-primary{margin-top:1.05rem;width:100%;border:0;border-radius:.78rem;background:#4f46e5;padding:.82rem 1rem;font-size:.9rem;font-weight:900;color:#fff;cursor:pointer;transition:transform .15s,background .15s,box-shadow .15s}.calculator-primary:hover{background:#4338ca;transform:translateY(-1px);box-shadow:0 10px 22px rgba(79,70,229,.18)}.calculator-error{margin-top:.85rem;border:1px solid #fecaca;border-radius:.75rem;background:#fff7f7;padding:.72rem .85rem;font-size:.8rem;font-weight:700;color:#b91c1c}.calculator-result{margin-top:1rem;border:1px solid #c7d2fe;border-radius:.9rem;background:#f5f7ff;padding:1rem}.result-topline span{font-size:.68rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#6366f1}.result-copy{border:0;border-radius:.5rem;background:#fff;padding:.3rem .5rem;font-size:.72rem;font-weight:900;color:#4f46e5;cursor:pointer}.result-value{margin-top:.65rem;overflow-wrap:anywhere;font-size:1.5rem;font-weight:950;line-height:1.18;color:#1e1b4b}.result-detail{margin:.45rem 0 0;font-size:.8rem;line-height:1.5;color:#475569}.calculator-reset{display:block;margin:.75rem auto 0;border:0;background:transparent;padding:.3rem;font-size:.74rem;font-weight:800;color:#64748b;cursor:pointer}.calculator-reset:hover{color:#334155}@media(max-width:480px){.calculator-shell{padding:1rem}.calculator-heading{align-items:flex-start}.calculator-status{display:none}.result-value{font-size:1.3rem}}
+</style>

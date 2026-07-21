@@ -1,0 +1,12 @@
+---
+interface Props { eyebrow?: string; title: string; description?: string; href?: string; linkLabel?: string; }
+const { eyebrow, title, description, href, linkLabel = "Ver todas" } = Astro.props;
+---
+<div class="section-heading">
+  <div>
+    {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+    <h2>{title}</h2>
+    {description && <p class="section-description">{description}</p>}
+  </div>
+  {href && <a class="section-link" href={href}>{linkLabel}<span aria-hidden="true">→</span></a>}
+</div>
