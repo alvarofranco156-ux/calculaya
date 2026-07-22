@@ -26,6 +26,15 @@ const websiteSchema = { "@context": "https://schema.org", "@type": "WebSite", na
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
     <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
+    <!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-LBNCQ2DQW2"></script>
+<script is:inline>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-LBNCQ2DQW2');
+</script>
   </head>
   <body>
     <a class="skip-link" href="#contenido">Saltar al contenido</a>
