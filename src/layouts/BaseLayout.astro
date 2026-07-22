@@ -3,10 +3,11 @@ import "../styles/global.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import { site } from "../data/site";
-interface Props { title?: string; description?: string; canonical?: string; noindex?: boolean; image?: string; }
-const { title = site.title, description = site.description, canonical = Astro.url.pathname, noindex = false, image = "/og-default.png" } = Astro.props;
+interface Props { title?: string; description?: string; canonical?: string; noindex?: boolean; image?: string; ogType?: "website" | "article"; }
+const { title = site.title, description = site.description, canonical = Astro.url.pathname, noindex = false, image = "/og-default.png", ogType = "website" } = Astro.props;
 const canonicalUrl = new URL(canonical, site.url).toString();
 const imageUrl = new URL(image, site.url).toString();
+const organizationSchema = { "@context": "https://schema.org", "@type": "Organization", name: site.name, url: site.url, logo: new URL("/favicon.svg", site.url).toString() };
 const websiteSchema = { "@context": "https://schema.org", "@type": "WebSite", name: site.name, url: site.url, description: site.description, potentialAction: { "@type": "SearchAction", target: `${site.url}/buscar?q={search_term_string}`, "query-input": "required name=search_term_string" } };
 ---
 <!doctype html>
@@ -20,9 +21,10 @@ const websiteSchema = { "@context": "https://schema.org", "@type": "WebSite", na
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalUrl} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
-    <meta property="og:type" content="website" /><meta property="og:locale" content="es_ES" /><meta property="og:site_name" content={site.name} /><meta property="og:title" content={title} /><meta property="og:description" content={description} /><meta property="og:url" content={canonicalUrl} /><meta property="og:image" content={imageUrl} />
+    <meta property="og:type" content={ogType} /><meta property="og:locale" content="es_ES" /><meta property="og:site_name" content={site.name} /><meta property="og:title" content={title} /><meta property="og:description" content={description} /><meta property="og:url" content={canonicalUrl} /><meta property="og:image" content={imageUrl} />
     <meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content={title} /><meta name="twitter:description" content={description} /><meta name="twitter:image" content={imageUrl} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
     <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
   </head>
   <body>

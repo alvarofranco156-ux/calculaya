@@ -5,79 +5,76 @@ import ToolCard from "../components/ToolCard.astro";
 import Breadcrumbs from "../components/Breadcrumbs.astro";
 import { tools } from "../data/tools";
 import { getToolContent } from "../data/toolContent";
+import { getSeoContent } from "../data/seoContent";
 
 export function getStaticPaths(){return tools.map(tool=>({params:{slug:tool.slug},props:{tool}}))}
 const {tool}=Astro.props;
 const content=getToolContent(tool);
-const related=tools.filter(t=>t.category===tool.category&&t.slug!==tool.slug).slice(0,3);
+const seo=getSeoContent(tool);
+const mergedFaq=[...seo.faq, ...tool.faqs].filter((item,index,array)=>array.findIndex(x=>x.question===item.question)===index).slice(0,6);
+const related=tools.filter(t=>t.category===tool.category&&t.slug!==tool.slug).slice(0,6);
 const pageUrl=`https://calculaya.es/${tool.slug}`;
-const schema={
-  "@context":"https://schema.org",
-  "@type":"WebApplication",
-  name:tool.name,
-  url:pageUrl,
-  description:content.metaDescription,
-  applicationCategory:"UtilitiesApplication",
-  operatingSystem:"Cualquier sistema con navegador web",
-  browserRequirements:"JavaScript habilitado",
-  isAccessibleForFree:true,
-  inLanguage:"es-ES",
-  offers:{"@type":"Offer",price:"0",priceCurrency:"EUR"},
+const breadcrumbs=[{label:"Inicio",href:"/"},{label:"Herramientas",href:"/herramientas"},{label:tool.category,href:"/categorias"},{label:tool.name}];
+const applicationSchema={
+  "@context":"https://schema.org","@type":"WebApplication",name:tool.name,url:pageUrl,description:seo.metaDescription,
+  applicationCategory:"UtilitiesApplication",operatingSystem:"Cualquier sistema con navegador web",browserRequirements:"JavaScript habilitado",
+  isAccessibleForFree:true,inLanguage:"es-ES",offers:{"@type":"Offer",price:"0",priceCurrency:"EUR"},
   featureList:["Cálculo online inmediato","Sin registro","Resultado explicado","Uso gratuito"]
 };
-const faq={"@context":"https://schema.org","@type":"FAQPage",mainEntity:tool.faqs.map(f=>({"@type":"Question",name:f.question,acceptedAnswer:{"@type":"Answer",text:f.answer}}))};
+const faqSchema={"@context":"https://schema.org","@type":"FAQPage",mainEntity:mergedFaq.map(f=>({"@type":"Question",name:f.question,acceptedAnswer:{"@type":"Answer",text:f.answer}}))};
+const breadcrumbSchema={"@context":"https://schema.org","@type":"BreadcrumbList",itemListElement:breadcrumbs.map((item,index)=>({"@type":"ListItem",position:index+1,name:item.label,item:item.href?new URL(item.href,"https://calculaya.es").toString():pageUrl}))};
+const articleSchema={"@context":"https://schema.org","@type":"Article",headline:seo.title,description:seo.metaDescription,mainEntityOfPage:pageUrl,inLanguage:"es-ES",author:{"@type":"Organization",name:"Calculaya"},publisher:{"@type":"Organization",name:"Calculaya",url:"https://calculaya.es"},dateModified:"2026-07-22"};
 ---
-<BaseLayout title={`${tool.name} online gratis | Calculaya`} description={content.metaDescription} canonical={`/${tool.slug}`}>
-<script type="application/ld+json" set:html={JSON.stringify(schema)} />
-<script type="application/ld+json" set:html={JSON.stringify(faq)} />
+<BaseLayout title={seo.title} description={seo.metaDescription} canonical={`/${tool.slug}`} ogType="article">
+<script type="application/ld+json" set:html={JSON.stringify(applicationSchema)} />
+<script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+<script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+<script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
 <section class="tool-hero">
   <div class="site-container tool-hero-inner">
-    <Breadcrumbs items={[{label:"Inicio",href:"/"},{label:"Herramientas",href:"/herramientas"},{label:tool.name}]} />
+    <Breadcrumbs items={breadcrumbs} />
     <div class="tool-layout">
       <div class="tool-intro">
         <span class="tool-main-icon" aria-hidden="true">{tool.icon}</span>
         <p class="eyebrow">Herramienta de {tool.category}</p>
         <h1>{tool.name}</h1>
-        <p class="tool-lead">Utiliza esta herramienta para {content.purpose}. Es gratuita, funciona directamente en tu navegador y no requiere registro.</p>
-        <ul class="tool-benefits" aria-label="Ventajas de la herramienta">
-          <li>Resultado inmediato</li><li>Datos procesados en tu navegador</li><li>Explicación sencilla</li>
-        </ul>
+        <p class="tool-lead">{seo.intro}</p>
+        <ul class="tool-benefits" aria-label="Ventajas de la herramienta"><li>Resultado inmediato</li><li>Sin registro</li><li>Explicación clara</li></ul>
       </div>
-      <ToolCalculator kind={tool.kind} toolName={tool.name}/>
+      <ToolCalculator kind={tool.kind} toolName={tool.name} slug={tool.slug} category={tool.category}/>
     </div>
   </div>
 </section>
 
 <article class="site-container tool-content">
-  <section class="content-block content-highlight">
-    <p class="eyebrow">Qué hace esta calculadora</p>
-    <h2>¿Para qué sirve {tool.name.toLowerCase()}?</h2>
-    <p>Sirve para {content.purpose}. Puedes modificar los valores tantas veces como necesites para comparar escenarios y comprender cómo cambia el resultado.</p>
+  <nav class="page-toc" aria-label="Contenido de la página">
+    <strong>En esta página</strong>
+    <a href="#para-que-sirve">Para qué sirve</a><a href="#como-usar">Cómo usarla</a><a href="#ejemplo">Ejemplo</a><a href="#formula">Fórmula</a><a href="#errores">Errores frecuentes</a><a href="#preguntas">Preguntas frecuentes</a>
+  </nav>
+
+  <section id="para-que-sirve" class="content-block content-highlight scroll-target">
+    <p class="eyebrow">Utilidad principal</p><h2>¿Para qué sirve {tool.name.toLowerCase()}?</h2>
+    <p>{seo.intro}</p><p>{seo.howItWorks}</p>
   </section>
 
   <div class="content-columns">
-    <section class="content-block">
-      <h2>Cuándo puede resultarte útil</h2>
-      <ul class="check-list">{content.uses.map(use=><li>{use}</li>)}</ul>
-    </section>
-    <section class="content-block">
-      <h2>Cómo utilizarla</h2>
-      <ol class="numbered-list"><li>Introduce los datos solicitados y revisa las unidades.</li><li>Pulsa <strong>Calcular resultado</strong>.</li><li>Lee el resultado y su explicación.</li><li>Cambia los valores para comparar otro escenario.</li></ol>
-    </section>
+    <section class="content-block"><h2>Cuándo puede resultarte útil</h2><ul class="check-list">{content.uses.map(use=><li>{use}</li>)}</ul></section>
+    <section id="como-usar" class="content-block scroll-target"><h2>Cómo utilizarla paso a paso</h2><ol class="numbered-list"><li>Lee la descripción de cada campo y comprueba la unidad solicitada.</li><li>Introduce datos válidos y evita mezclar unidades.</li><li>Pulsa <strong>Calcular resultado</strong>.</li><li>Revisa el valor principal y la explicación.</li><li>Modifica un dato cada vez para comparar escenarios.</li></ol></section>
   </div>
 
-  <section class="content-block formula-block">
-    <div><p class="eyebrow">Método de cálculo</p><h2>Fórmula e interpretación</h2></div>
-    <p class="formula-text">{tool.formula}</p>
-    <p>{content.interpretation}</p>
-  </section>
+  <section id="ejemplo" class="content-block example-block scroll-target"><p class="eyebrow">Ejemplo práctico</p><h2>Ejemplo de uso de {tool.name.toLowerCase()}</h2><p>{seo.example}</p><p>Prueba el ejemplo en la calculadora y cambia uno de los valores para entender cómo influye en el resultado.</p></section>
+
+  <section id="formula" class="content-block formula-block scroll-target"><div><p class="eyebrow">Método de cálculo</p><h2>Fórmula e interpretación</h2></div><p class="formula-text">{tool.formula}</p><p>{content.interpretation}</p></section>
+
+  <section class="content-block"><p class="eyebrow">Mejores resultados</p><h2>Consejos para calcular con más precisión</h2><ul class="check-list">{seo.tips.map(tip=><li>{tip}</li>)}</ul></section>
+
+  <section id="errores" class="content-block scroll-target"><p class="eyebrow">Evita estos fallos</p><h2>Errores frecuentes</h2><ul class="warning-list">{seo.mistakes.map(item=><li>{item}</li>)}</ul></section>
 
   <aside class="notice-box"><strong>Importante:</strong> {content.warning}</aside>
 
-  <section class="content-block faq-section">
-    <p class="eyebrow">Dudas habituales</p><h2>Preguntas frecuentes</h2>
-    <div class="faq-list">{tool.faqs.map(f=><details><summary>{f.question}</summary><p>{f.answer}</p></details>)}</div>
-  </section>
+  <section id="preguntas" class="content-block faq-section scroll-target"><p class="eyebrow">Dudas habituales</p><h2>Preguntas frecuentes sobre {tool.name.toLowerCase()}</h2><div class="faq-list">{mergedFaq.map(f=><details><summary>{f.question}</summary><p>{f.answer}</p></details>)}</div></section>
+
+  <section class="content-block compact-content"><p class="eyebrow">Conceptos relacionados</p><h2>Términos que conviene conocer</h2><p>{seo.relatedTerms.map((term,index)=><><strong>{term}</strong>{index<seo.relatedTerms.length-1?", ":"."}</>)}</p></section>
 
   {related.length>0&&<section class="related-section"><p class="eyebrow">Sigue calculando</p><h2>Herramientas relacionadas</h2><div class="tool-grid">{related.map(t=><ToolCard {...t}/>)}</div></section>}
 </article>

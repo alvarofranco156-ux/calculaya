@@ -1,0 +1,35 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Breadcrumbs from "../components/Breadcrumbs.astro";
+const breadcrumbs=[{label:"Inicio",href:"/"},{label:"Mis herramientas"}];
+---
+<BaseLayout title="Mis herramientas favoritas y cálculos recientes | Calculaya" description="Consulta tus calculadoras favoritas y los últimos cálculos guardados localmente en tu navegador." canonical="/mis-herramientas" noindex={true}>
+<section class="utility-page">
+  <div class="site-container">
+    <Breadcrumbs items={breadcrumbs}/>
+    <div class="utility-hero">
+      <p class="eyebrow">Tu espacio personal</p>
+      <h1>Mis herramientas</h1>
+      <p>Accede rápidamente a tus calculadoras favoritas y revisa tus últimos resultados. Toda la información se guarda únicamente en este navegador.</p>
+    </div>
+    <div class="personal-grid">
+      <section class="personal-panel"><div class="panel-heading"><div><p class="eyebrow">Acceso rápido</p><h2>Favoritas</h2></div><button type="button" data-clear-favorites>Vaciar</button></div><div data-favorites-list class="saved-list"><p class="empty-state">Todavía no has marcado ninguna herramienta como favorita.</p></div></section>
+      <section class="personal-panel"><div class="panel-heading"><div><p class="eyebrow">Actividad local</p><h2>Cálculos recientes</h2></div><button type="button" data-clear-history>Vaciar</button></div><div data-history-list class="saved-list"><p class="empty-state">Todavía no hay cálculos guardados.</p></div></section>
+    </div>
+  </div>
+</section>
+<script>
+const FAVORITES_KEY='calculaya:favorites:v1';
+const HISTORY_KEY='calculaya:history:v1';
+const read=(key)=>{try{return JSON.parse(localStorage.getItem(key)||'[]')}catch{return []}};
+const esc=(value)=>String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+function renderFavorites(){const box=document.querySelector('[data-favorites-list]');const items=read(FAVORITES_KEY);box.innerHTML=items.length?items.map(item=>`<article class="saved-item"><div><strong>${esc(item.name)}</strong><small>${esc(item.category||'Herramienta')}</small></div><a href="/${encodeURIComponent(item.slug)}">Abrir</a></article>`).join(''):'<p class="empty-state">Todavía no has marcado ninguna herramienta como favorita.</p>'}
+function renderHistory(){const box=document.querySelector('[data-history-list]');const items=read(HISTORY_KEY);box.innerHTML=items.length?items.map(item=>`<article class="saved-item history-item"><div><strong>${esc(item.toolName)}</strong><small>${esc(item.dateLabel||'')}</small><p>${esc(item.value)}</p><span>${esc(item.detail||'')}</span></div><a href="/${encodeURIComponent(item.slug)}">Repetir</a></article>`).join(''):'<p class="empty-state">Todavía no hay cálculos guardados.</p>'}
+document.querySelector('[data-clear-favorites]').addEventListener('click',()=>{localStorage.removeItem(FAVORITES_KEY);renderFavorites()});
+document.querySelector('[data-clear-history]').addEventListener('click',()=>{localStorage.removeItem(HISTORY_KEY);renderHistory()});
+renderFavorites();renderHistory();
+</script>
+<style>
+.utility-page{padding:2rem 0 5rem}.utility-hero{max-width:760px;margin:2rem 0}.utility-hero h1{font-size:clamp(2rem,5vw,3.5rem);margin:.3rem 0}.utility-hero p{color:#64748b;line-height:1.75}.personal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem}.personal-panel{border:1px solid #e2e8f0;border-radius:1.25rem;background:#fff;padding:1.25rem;box-shadow:0 15px 40px rgba(15,23,42,.06)}.panel-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem}.panel-heading h2{margin:.1rem 0}.panel-heading button{border:0;background:#f1f5f9;border-radius:.6rem;padding:.45rem .65rem;font-weight:800;color:#64748b;cursor:pointer}.saved-list{display:grid;gap:.7rem}.saved-item{display:flex;justify-content:space-between;gap:1rem;align-items:center;border:1px solid #edf2f7;border-radius:.85rem;padding:.85rem}.saved-item div{min-width:0}.saved-item strong,.saved-item small,.saved-item span{display:block}.saved-item small,.saved-item span{color:#64748b;font-size:.78rem;margin-top:.2rem}.saved-item p{margin:.45rem 0 .1rem;font-weight:900;color:#312e81}.saved-item a{flex:0 0 auto;text-decoration:none;border-radius:.6rem;background:#eef2ff;padding:.45rem .65rem;font-size:.78rem;font-weight:900;color:#4f46e5}.empty-state{margin:0;border:1px dashed #cbd5e1;border-radius:.85rem;padding:1rem;color:#64748b}.history-item{align-items:flex-start}@media(max-width:760px){.personal-grid{grid-template-columns:1fr}}
+</style>
+</BaseLayout>

@@ -1,12 +1,16 @@
 ---
-const { kind, toolName = "esta herramienta" } = Astro.props;
+const { kind, toolName = "esta herramienta", slug = "", category = "Herramientas" } = Astro.props;
 ---
-<section class="calculator-shell" data-calculator data-kind={kind} aria-label="Calculadora">
+<section class="calculator-shell" data-calculator data-kind={kind} data-slug={slug} data-tool-name={toolName} data-category={category} aria-label="Calculadora">
   <div class="calculator-heading">
     <div class="calculator-title-row"><span aria-hidden="true">✦</span><div><p class="calculator-kicker">Cálculo online</p><h2>Introduce los datos</h2></div></div>
     <span class="calculator-status" data-status>Lista</span>
   </div>
   <p class="calculator-helper">Completa los campos de {toolName.toLowerCase()}. Los cálculos se realizan en este dispositivo.</p>
+  <div class="calculator-quick-actions" aria-label="Acciones de la herramienta">
+    <button type="button" data-favorite aria-pressed="false">☆ Guardar en favoritas</button>
+    <button type="button" data-share>Compartir</button>
+  </div>
 
   <form class="calculator-form" data-form novalidate>
     <div class="calculator-fields" data-fields></div>
@@ -24,9 +28,18 @@ const { kind, toolName = "esta herramienta" } = Astro.props;
   </div>
 
   <button type="button" class="calculator-reset" data-reset>Restablecer valores</button>
+  <div class="calculator-history" data-local-history hidden>
+    <div class="history-heading"><strong>Últimos cálculos</strong><a href="/mis-herramientas">Ver todos</a></div>
+    <div data-local-history-list></div>
+  </div>
 </section>
 
 <script>
+const FAVORITES_KEY='calculaya:favorites:v1';
+const HISTORY_KEY='calculaya:history:v1';
+const fieldHelp={
+ amount:'Introduce el importe sobre el que quieres realizar el cálculo.', rate:'Escribe el porcentaje anual o tipo aplicable.', price:'Indica el precio antes de aplicar cambios.', cost:'Añade el coste real o precio de adquisición.', sale:'Indica el precio final de venta.', capital:'Cantidad inicial o capital financiado.', years:'Duración total expresada en años.', months:'Número total de meses disponibles.', weight:'Introduce el peso en kilogramos.', height:'Introduce la altura usando la unidad indicada.', age:'Edad actual en años completos.', distance:'Distancia total recorrida.', minutes:'Tiempo total empleado, expresado en minutos.', start:'Selecciona la fecha inicial del cálculo.', end:'Selecciona la fecha final del cálculo.', text:'Pega o escribe el texto que deseas analizar.', list:'Separa los números mediante comas, espacios o punto y coma.'
+};
 const definitions = {
   iva: { fields:[['amount','Importe sin IVA','number',100,{min:0,step:'any',suffix:'€'}],['rate','Tipo de IVA','number',21,{min:0,max:100,step:'any',suffix:'%'}]], calculate:v=>({value:`${fmt(v.amount*v.rate/100)} € de IVA`,detail:`Total con IVA: ${fmt(v.amount*(1+v.rate/100))} €`}) },
   discount: { fields:[['price','Precio original','number',100,{min:0,step:'any',suffix:'€'}],['rate','Descuento','number',20,{min:0,max:100,step:'any',suffix:'%'}]], calculate:v=>({value:`${fmt(v.price*(1-v.rate/100))} €`,detail:`Ahorras ${fmt(v.price*v.rate/100)} € sobre el precio original.`}) },
@@ -95,6 +108,18 @@ for(const root of document.querySelectorAll('[data-calculator]')){
   const errorBox=root.querySelector('[data-error]');
   const status=root.querySelector('[data-status]');
   const copyButton=root.querySelector('[data-copy]');
+  const favoriteButton=root.querySelector('[data-favorite]');
+  const shareButton=root.querySelector('[data-share]');
+  const historyBox=root.querySelector('[data-local-history]');
+  const historyList=root.querySelector('[data-local-history-list]');
+  const slug=root.dataset.slug;
+  const toolName=root.dataset.toolName;
+  const category=root.dataset.category;
+  const readStorage=(key)=>{try{return JSON.parse(localStorage.getItem(key)||'[]')}catch{return []}};
+  const writeStorage=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value))}catch{}};
+  const escapeText=(value)=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const renderFavorite=()=>{const active=readStorage(FAVORITES_KEY).some(item=>item.slug===slug);favoriteButton.setAttribute('aria-pressed',String(active));favoriteButton.textContent=active?'★ Guardada en favoritas':'☆ Guardar en favoritas';favoriteButton.classList.toggle('is-active',active)};
+  const renderLocalHistory=()=>{const items=readStorage(HISTORY_KEY).filter(item=>item.slug===slug).slice(0,3);historyBox.hidden=!items.length;historyList.innerHTML=items.map(item=>`<button type="button" class="history-chip" title="${escapeText(item.detail||'')}"><strong>${escapeText(item.value)}</strong><small>${escapeText(item.dateLabel||'')}</small></button>`).join('')};
 
   if(!definition){
     errorBox.textContent='Esta herramienta todavía no tiene una configuración disponible.';
@@ -122,6 +147,10 @@ for(const root of document.querySelectorAll('[data-calculator]')){
     control.required=true;
     if(type==='textarea')control.rows=5;
     wrapper.append(labelRow,control);
+    const help=document.createElement('span');
+    help.className='field-help';
+    help.textContent=options.help||fieldHelp[name]||`Introduce ${label.toLowerCase()} con la unidad indicada.`;
+    wrapper.appendChild(help);
     fieldsBox.appendChild(wrapper);
   }
 
@@ -151,6 +180,10 @@ for(const root of document.querySelectorAll('[data-calculator]')){
       status.textContent='Calculado';
       status.classList.add('is-complete');
       copyButton.textContent='Copiar';
+      const history=readStorage(HISTORY_KEY);
+      history.unshift({slug,toolName,category,value:output.value,detail:output.detail||'',dateLabel:new Intl.DateTimeFormat('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date()),timestamp:Date.now()});
+      writeStorage(HISTORY_KEY,history.slice(0,30));
+      renderLocalHistory();
     }catch(error){
       errorBox.textContent=error instanceof Error?error.message:'Revisa los datos introducidos.';
       errorBox.hidden=false;
@@ -169,10 +202,14 @@ for(const root of document.querySelectorAll('[data-calculator]')){
     const text=[resultValue.textContent,resultDetail.textContent].filter(Boolean).join(' — ');
     try{await navigator.clipboard.writeText(text);copyButton.textContent='Copiado ✓'}catch{copyButton.textContent='No se pudo copiar'}
   });
+  favoriteButton.addEventListener('click',()=>{const items=readStorage(FAVORITES_KEY);const index=items.findIndex(item=>item.slug===slug);if(index>=0)items.splice(index,1);else items.unshift({slug,name:toolName,category});writeStorage(FAVORITES_KEY,items.slice(0,50));renderFavorite()});
+  shareButton.addEventListener('click',async()=>{const data={title:toolName,text:`Calcula ${toolName.toLowerCase()} gratis en Calculaya`,url:location.href};try{if(navigator.share)await navigator.share(data);else{await navigator.clipboard.writeText(location.href);shareButton.textContent='Enlace copiado ✓'}}catch{}});
+  historyList.addEventListener('click',event=>{const button=event.target.closest('.history-chip');if(!button)return;navigator.clipboard?.writeText(button.querySelector('strong')?.textContent||'')});
+  renderFavorite();renderLocalHistory();
 }
 </script>
 
 <style>
 .calculator-shell{align-self:start;border:1px solid #e2e8f0;border-radius:1.35rem;background:#fff;padding:1.35rem;box-shadow:0 18px 50px rgba(15,23,42,.09)}
-.calculator-heading,.result-topline{display:flex;align-items:center;justify-content:space-between;gap:1rem}.calculator-title-row{display:flex;align-items:center;gap:.75rem}.calculator-title-row>span{display:grid;place-items:center;width:2.35rem;height:2.35rem;border-radius:.75rem;background:#eef2ff;color:#4f46e5;font-weight:900}.calculator-kicker{margin:0;font-size:.68rem;font-weight:850;letter-spacing:.09em;text-transform:uppercase;color:#6366f1}.calculator-heading h2{margin:.15rem 0 0;font-size:1.15rem;font-weight:900;color:#0f172a}.calculator-status{border-radius:999px;background:#f8fafc;padding:.35rem .6rem;font-size:.68rem;font-weight:800;color:#64748b}.calculator-status.is-complete{background:#ecfdf5;color:#047857}.calculator-helper{margin:.9rem 0 0;color:#64748b;font-size:.8rem;line-height:1.5}.calculator-form{margin-top:1.15rem}.calculator-fields{display:grid;gap:.85rem}.field-group{display:grid;gap:.38rem}.field-label{display:flex;align-items:center;justify-content:space-between;gap:1rem;font-size:.82rem;font-weight:800;color:#334155}.field-label small{font-size:.68rem;font-weight:750;color:#94a3b8}.field-control{width:100%;border:1px solid #d5dce7;border-radius:.75rem;background:#fbfdff;padding:.72rem .82rem;color:#0f172a;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}.field-control:hover{border-color:#b8c3d3;background:#fff}.field-control:focus{border-color:#6366f1;background:#fff;box-shadow:0 0 0 3px rgba(99,102,241,.11)}textarea.field-control{resize:vertical;min-height:6.5rem}.calculator-primary{margin-top:1.05rem;width:100%;border:0;border-radius:.78rem;background:#4f46e5;padding:.82rem 1rem;font-size:.9rem;font-weight:900;color:#fff;cursor:pointer;transition:transform .15s,background .15s,box-shadow .15s}.calculator-primary:hover{background:#4338ca;transform:translateY(-1px);box-shadow:0 10px 22px rgba(79,70,229,.18)}.calculator-error{margin-top:.85rem;border:1px solid #fecaca;border-radius:.75rem;background:#fff7f7;padding:.72rem .85rem;font-size:.8rem;font-weight:700;color:#b91c1c}.calculator-result{margin-top:1rem;border:1px solid #c7d2fe;border-radius:.9rem;background:#f5f7ff;padding:1rem}.result-topline span{font-size:.68rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#6366f1}.result-copy{border:0;border-radius:.5rem;background:#fff;padding:.3rem .5rem;font-size:.72rem;font-weight:900;color:#4f46e5;cursor:pointer}.result-value{margin-top:.65rem;overflow-wrap:anywhere;font-size:1.5rem;font-weight:950;line-height:1.18;color:#1e1b4b}.result-detail{margin:.45rem 0 0;font-size:.8rem;line-height:1.5;color:#475569}.calculator-reset{display:block;margin:.75rem auto 0;border:0;background:transparent;padding:.3rem;font-size:.74rem;font-weight:800;color:#64748b;cursor:pointer}.calculator-reset:hover{color:#334155}@media(max-width:480px){.calculator-shell{padding:1rem}.calculator-heading{align-items:flex-start}.calculator-status{display:none}.result-value{font-size:1.3rem}}
+.calculator-heading,.result-topline{display:flex;align-items:center;justify-content:space-between;gap:1rem}.calculator-title-row{display:flex;align-items:center;gap:.75rem}.calculator-title-row>span{display:grid;place-items:center;width:2.35rem;height:2.35rem;border-radius:.75rem;background:#eef2ff;color:#4f46e5;font-weight:900}.calculator-kicker{margin:0;font-size:.68rem;font-weight:850;letter-spacing:.09em;text-transform:uppercase;color:#6366f1}.calculator-heading h2{margin:.15rem 0 0;font-size:1.15rem;font-weight:900;color:#0f172a}.calculator-status{border-radius:999px;background:#f8fafc;padding:.35rem .6rem;font-size:.68rem;font-weight:800;color:#64748b}.calculator-status.is-complete{background:#ecfdf5;color:#047857}.calculator-helper{margin:.9rem 0 0;color:#64748b;font-size:.8rem;line-height:1.5}.calculator-form{margin-top:1.15rem}.calculator-fields{display:grid;gap:.85rem}.field-group{display:grid;gap:.38rem}.field-label{display:flex;align-items:center;justify-content:space-between;gap:1rem;font-size:.82rem;font-weight:800;color:#334155}.field-label small{font-size:.68rem;font-weight:750;color:#94a3b8}.field-control{width:100%;border:1px solid #d5dce7;border-radius:.75rem;background:#fbfdff;padding:.72rem .82rem;color:#0f172a;outline:none;transition:border-color .15s,box-shadow .15s,background .15s}.field-control:hover{border-color:#b8c3d3;background:#fff}.field-control:focus{border-color:#6366f1;background:#fff;box-shadow:0 0 0 3px rgba(99,102,241,.11)}textarea.field-control{resize:vertical;min-height:6.5rem}.calculator-primary{margin-top:1.05rem;width:100%;border:0;border-radius:.78rem;background:#4f46e5;padding:.82rem 1rem;font-size:.9rem;font-weight:900;color:#fff;cursor:pointer;transition:transform .15s,background .15s,box-shadow .15s}.calculator-primary:hover{background:#4338ca;transform:translateY(-1px);box-shadow:0 10px 22px rgba(79,70,229,.18)}.calculator-error{margin-top:.85rem;border:1px solid #fecaca;border-radius:.75rem;background:#fff7f7;padding:.72rem .85rem;font-size:.8rem;font-weight:700;color:#b91c1c}.calculator-result{margin-top:1rem;border:1px solid #c7d2fe;border-radius:.9rem;background:#f5f7ff;padding:1rem}.result-topline span{font-size:.68rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#6366f1}.result-copy{border:0;border-radius:.5rem;background:#fff;padding:.3rem .5rem;font-size:.72rem;font-weight:900;color:#4f46e5;cursor:pointer}.result-value{margin-top:.65rem;overflow-wrap:anywhere;font-size:1.5rem;font-weight:950;line-height:1.18;color:#1e1b4b}.result-detail{margin:.45rem 0 0;font-size:.8rem;line-height:1.5;color:#475569}.calculator-reset{display:block;margin:.75rem auto 0;border:0;background:transparent;padding:.3rem;font-size:.74rem;font-weight:800;color:#64748b;cursor:pointer}.calculator-reset:hover{color:#334155}.calculator-quick-actions{display:flex;gap:.55rem;margin-top:.8rem}.calculator-quick-actions button{border:1px solid #dbe3ef;border-radius:.65rem;background:#fff;padding:.48rem .65rem;font-size:.73rem;font-weight:850;color:#475569;cursor:pointer}.calculator-quick-actions button:hover,.calculator-quick-actions button.is-active{border-color:#c7d2fe;background:#eef2ff;color:#4338ca}.field-help{font-size:.7rem;line-height:1.4;color:#7c8aa0}.calculator-history{margin-top:1rem;border-top:1px solid #edf2f7;padding-top:.85rem}.history-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:.55rem;font-size:.76rem;color:#475569}.history-heading a{font-weight:850;color:#4f46e5;text-decoration:none}.calculator-history [data-local-history-list]{display:flex;gap:.45rem;overflow-x:auto;padding-bottom:.15rem}.history-chip{flex:0 0 auto;border:1px solid #e2e8f0;border-radius:.65rem;background:#f8fafc;padding:.5rem .62rem;text-align:left;cursor:pointer}.history-chip strong,.history-chip small{display:block}.history-chip strong{font-size:.75rem;color:#1e293b}.history-chip small{margin-top:.15rem;font-size:.63rem;color:#94a3b8}@media(max-width:480px){.calculator-shell{padding:1rem}.calculator-heading{align-items:flex-start}.calculator-status{display:none}.result-value{font-size:1.3rem}}
 </style>
