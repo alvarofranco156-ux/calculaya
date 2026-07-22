@@ -32,5 +32,16 @@ const websiteSchema = { "@context": "https://schema.org", "@type": "WebSite", na
     <Header />
     <main id="contenido"><slot /></main>
     <Footer />
+    <script is:inline>
+(function(s){
+  s.dataset.zone='11372195';
+  s.src='https://nap5k.com/tag.min.js';
+})(
+  [document.documentElement, document.body]
+    .filter(Boolean)
+    .pop()
+    .appendChild(document.createElement('script'))
+);
+</script>
   </body>
 </html>
